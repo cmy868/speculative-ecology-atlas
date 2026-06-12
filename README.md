@@ -57,14 +57,33 @@ from `type`.
   exists, the panel shows a quiet placeholder frame; once you drop the image
   in, it appears automatically.
 
-## Deploy (any static host)
+## Deploy
 
-`npm run build` produces a fully static site in `out/`. Upload that folder
-to any static host:
+**Live site:** https://cmy868.github.io/speculative-ecology-atlas/
 
-- **GitHub Pages** — push `out/` to a `gh-pages` branch (or use an action).
-  If the site lives under a subpath (e.g. `username.github.io/atlas`), set
-  `basePath: '/atlas'` in `next.config.mjs` first.
+The site is published on GitHub Pages from the `gh-pages` branch of
+https://github.com/cmy868/speculative-ecology-atlas. After changing
+anything (nodes, links, media, styles), publish the update with one command:
+
+```bash
+npm run deploy
+```
+
+This rebuilds the static site with the GitHub Pages base path
+(`NEXT_PUBLIC_BASE_PATH=/speculative-ecology-atlas`) and pushes the `out/`
+folder to the `gh-pages` branch. The live site updates a minute or so later.
+Remember to also commit and push your source changes to `main` so the
+repository stays in sync:
+
+```bash
+git add -A && git commit -m "Describe the change" && git push
+```
+
+### Other static hosts
+
+`npm run build` (without the base path) produces a root-relative static site
+in `out/` that works on any host:
+
 - **Netlify / Vercel / Cloudflare Pages** — connect the repo; build command
   `npm run build`, publish directory `out`.
 - **Plain web server** — copy the contents of `out/` to the web root.
