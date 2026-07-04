@@ -494,19 +494,6 @@ code {
   margin: 0 0 1.4rem;
 }
 
-.media-slot {
-  aspect-ratio: 3 / 2;
-  border: 1px dashed var(--line-strong);
-  display: grid;
-  place-items: center;
-  text-align: center;
-  color: var(--ink-faint);
-  font-size: 0.74rem;
-  line-height: 1.6;
-  margin: 0 0 1.4rem;
-  padding: 1rem;
-}
-
 .media-image {
   width: 100%;
   aspect-ratio: 3 / 2;

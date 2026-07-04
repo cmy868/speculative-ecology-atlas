@@ -34,19 +34,8 @@ function MediaImage({ src, title }: { src: string; title: string }) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
-    return (
-      <div
-        className="media-slot"
-        role="img"
-        aria-label={`Media placeholder for ${title}`}
-      >
-        <span>
-          media placeholder
-          <br />
-          <code>public{src}</code>
-        </span>
-      </div>
-    );
+    // No placeholder frames: a project with a missing image simply shows no media.
+    return null;
   }
 
   return (

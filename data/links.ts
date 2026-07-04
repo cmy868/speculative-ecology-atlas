@@ -15,28 +15,31 @@ export const atlasLinks: AtlasLink[] = [
   /* Fusion: Landscape and Beyond */
   { source: 'fusion-landscape-and-beyond', target: 'memory' },
   { source: 'fusion-landscape-and-beyond', target: 'chinese-landscape-aesthetics' },
-  { source: 'fusion-landscape-and-beyond', target: 'generative-ai' },
   { source: 'fusion-landscape-and-beyond', target: 'machine-imagination' },
+  { source: 'fusion-landscape-and-beyond', target: 'collective-memory' },
 
   /* Domy Reverie */
   { source: 'domy-reverie', target: 'memory' },
-  { source: 'domy-reverie', target: 'generative-ai' },
-  { source: 'domy-reverie', target: 'human-ai-co-creation' },
+  { source: 'domy-reverie', target: 'environmental-sensing' },
+  { source: 'domy-reverie', target: 'collective-memory' },
 
   /* Cycle to Learn */
   { source: 'cycle-to-learn', target: 'life' },
   { source: 'cycle-to-learn', target: 'ecological-time' },
-  { source: 'cycle-to-learn', target: 'human-ai-co-creation' },
+  { source: 'cycle-to-learn', target: 'environmental-sensing' },
 
   /* Five Seasons — a memory work (Chapter 2) */
   { source: 'five-seasons', target: 'memory' },
   { source: 'five-seasons', target: 'ecological-time' },
   { source: 'five-seasons', target: 'chinese-landscape-aesthetics' },
+  { source: 'five-seasons', target: 'collective-memory' },
 
   /* Six Seasons — a memory work (Chapter 2) */
   { source: 'six-seasons', target: 'memory' },
   { source: 'six-seasons', target: 'environmental-sensing' },
   { source: 'six-seasons', target: 'speculative-worldbuilding' },
+  { source: 'six-seasons', target: 'chinese-landscape-aesthetics' },
+  { source: 'six-seasons', target: 'ecological-time' },
 
   /* The Silhouette Seeker — a life work (Chapter 3) */
   { source: 'the-silhouette-seeker', target: 'life' },
@@ -44,36 +47,33 @@ export const atlasLinks: AtlasLink[] = [
   { source: 'the-silhouette-seeker', target: 'speculative-worldbuilding' },
   { source: 'the-silhouette-seeker', target: 'embodied-interaction' },
 
-  /* Speculative Fractal Intelligence */
-  { source: 'speculative-fractal-intelligence', target: 'embodiment' },
+  /* Speculative Fractal Intelligence — a future direction beyond the dissertation */
+  { source: 'speculative-fractal-intelligence', target: 'speculative-ecology' },
   { source: 'speculative-fractal-intelligence', target: 'more-than-human' },
   { source: 'speculative-fractal-intelligence', target: 'machine-imagination' },
 
   /* Peeling Cycle — an embodiment work (Chapter 4) */
   { source: 'peeling-cycle', target: 'embodiment' },
   { source: 'peeling-cycle', target: 'embodied-interaction' },
-  { source: 'peeling-cycle', target: 'human-ai-co-creation' },
 
   /* Learning to Move, Learning to Play, Learning to Animate */
   { source: 'learning-to-move-play-animate', target: 'embodiment' },
   { source: 'learning-to-move-play-animate', target: 'life' },
-  { source: 'learning-to-move-play-animate', target: 'generative-ai' },
+  { source: 'learning-to-move-play-animate', target: 'environmental-sensing' },
+  { source: 'learning-to-move-play-animate', target: 'more-than-human' },
 
   /* The Department of Species Services */
   { source: 'department-of-species-services', target: 'life' },
   { source: 'department-of-species-services', target: 'more-than-human' },
   { source: 'department-of-species-services', target: 'speculative-worldbuilding' },
-  { source: 'department-of-species-services', target: 'human-ai-co-creation' },
 
   /* Beyond Characters: The Unseen Labyrinth */
   { source: 'beyond-characters', target: 'embodiment' },
   { source: 'beyond-characters', target: 'embodied-interaction' },
-  { source: 'beyond-characters', target: 'generative-ai' },
 
   /* A Cyborg's Mirror / Bodies in Hyperreality */
   { source: 'a-cyborgs-mirror', target: 'embodiment' },
   { source: 'a-cyborgs-mirror', target: 'embodied-interaction' },
-  { source: 'a-cyborgs-mirror', target: 'human-ai-co-creation' },
   { source: 'a-cyborgs-mirror', target: 'machine-imagination' },
 
   /* ————— Hidden connections: project ↔ project threads ————— */

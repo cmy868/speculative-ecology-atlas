@@ -125,7 +125,7 @@ export const atlasNodes: AtlasNode[] = [
     title: 'Speculative Fractal Intelligence',
     year: 'Ongoing',
     description:
-      'An ongoing speculative exploration of fractal, more-than-human intelligence — asking what cognition looks like when it branches like coastlines and root systems rather than flowing through commands.',
+      'A future direction beyond the dissertation: an ongoing speculative exploration of fractal, more-than-human intelligence — asking what cognition looks like when it branches like coastlines and root systems rather than flowing through commands.',
     tags: ['speculative research', 'fractals', 'more-than-human cognition'],
     media: '/media/speculative-fractal-intelligence.jpg',
     /* No individual project page on mingyongcheng.com yet, so link to the works index. */
@@ -196,15 +196,6 @@ export const atlasNodes: AtlasNode[] = [
 
   /* ————————————————————— Concepts ————————————————————— */
   {
-    id: 'generative-ai',
-    type: 'concept',
-    title: 'Generative AI',
-    description:
-      'Machine learning systems that synthesize new images, sounds, and texts from learned distributions. Within speculative ecology they are approached not as tools but as Emergent Repositories — latent reservoirs of cultural pattern that the artist works as an Agent of Emergence.',
-    citation:
-      'Rombach et al. (2022), “High-Resolution Image Synthesis with Latent Diffusion Models”; Boden & Edmonds (2019), From Fingers to Digits; McNamara (2023) on co-creativism.',
-  },
-  {
     id: 'more-than-human',
     type: 'concept',
     title: 'More-than-Human',
@@ -256,15 +247,6 @@ export const atlasNodes: AtlasNode[] = [
       'The construction of coherent possible worlds as a mode of inquiry: fiction and simulation used to rehearse ecological relations that do not yet exist, so that they may be felt before they are argued.',
     citation:
       'Dunne & Raby (2013), Speculative Everything; Haraway (2016), Staying with the Trouble; Georgiev et al. (2023) on eco-speculative thought.',
-  },
-  {
-    id: 'human-ai-co-creation',
-    type: 'concept',
-    title: 'Human-AI Co-Creation',
-    description:
-      'An iterative loop of Duo-Intelligence in which artistic intention and machinic generation continually reshape one another, producing work attributable to neither alone.',
-    citation:
-      'McNamara (2023) on co-creativism; Boden & Edmonds (2019), From Fingers to Digits; Akten (2021), Deep Visual Instruments.',
   },
   {
     id: 'ecological-time',
