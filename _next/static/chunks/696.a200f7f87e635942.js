@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[696],{7696:(e,u,r)=>{r.r(u),r.d(u,{default:()=>f});var s=r(5155),t=r(887);function f(e){let{graphRef:u,...r}=e;return(0,s.jsx)(t.A,{ref:u,...r})}}}]);
