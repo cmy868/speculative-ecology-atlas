@@ -38,6 +38,18 @@ for (const shot of shots) {
     await page.evaluate(shot.eval);
     await page.waitForTimeout(shot.afterEval ?? 2500);
   }
+  if (shot.mouse) {
+    /* glide in a few steps so the graph's hover raycast registers */
+    await page.mouse.move(shot.mouse.x - 80, shot.mouse.y - 60);
+    await page.waitForTimeout(200);
+    await page.mouse.move(shot.mouse.x, shot.mouse.y, { steps: 8 });
+    if (shot.mouseClick) {
+      await page.waitForTimeout(400);
+      await page.mouse.down();
+      await page.mouse.up();
+    }
+    await page.waitForTimeout(shot.afterMouse ?? 2500);
+  }
   await page.screenshot({ path: path.join(outDir, shot.name) });
   console.log('saved', shot.name);
   await page.close();

@@ -308,14 +308,16 @@ export default function AtlasMap3D() {
       membraneRef.current = membrane;
       scene.add(membrane.group);
 
-      /* subtle bloom: the threshold is set high so only the hot cores and
-         lit nebula threads bloom — and gently, so lit links keep their
-         violet/magenta/cyan hue instead of blowing out to white */
+      /* subtle bloom: the threshold sits just above the labels' luminance
+         so only hot cores, pulse crests and lit nebula threads bloom — and
+         gently (strength trimmed to compensate for the lower threshold),
+         so lit links halo softly while keeping their violet/magenta/cyan
+         hue instead of blowing out to white */
       const bloom = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
-        0.85, // strength
+        0.7, // strength
         0.55, // radius
-        0.8, // threshold — labels (#ded7c4) sit below this luminance
+        0.72, // threshold — labels (#ded7c4, linear ≈ 0.68) stay below
       );
       fg.postProcessingComposer().addPass(bloom);
 
@@ -407,12 +409,30 @@ export default function AtlasMap3D() {
         }
       };
 
-      /* settle into a face-on view so the framework diagram reads
-         (Memory up, Life lower-left, Embodiment lower-right), then fit */
+      /* ————— opening viewpoint —————
+         Not flat-on: the camera settles elevated above the ecliptic and
+         rotated off-axis, far enough back to frame the whole membrane with
+         margins, with the nucleus a touch off-center (rule of thirds).
+         The framework triangle still reads (Memory up, Life lower-left,
+         Embodiment lower-right) and the pose gives immediate depth —
+         the permanent gentle float then continues seamlessly from it. */
+      const elev = (20 * Math.PI) / 180; // above the ecliptic
+      const azim = (25 * Math.PI) / 180; // off-axis, toward the lit side
+      /* wide screens frame the membrane at ~1260; narrow viewports pull
+         back until the whole boundary still fits (vertical fov is 50°) */
+      const aspect = window.innerWidth / Math.max(window.innerHeight, 1);
+      const halfH = Math.atan(Math.tan((25 * Math.PI) / 180) * aspect);
+      const dist = Math.max(1260, 640 / Math.tan(halfH));
+      const pose = {
+        x: dist * Math.cos(elev) * Math.sin(azim),
+        y: dist * Math.sin(elev),
+        z: dist * Math.cos(elev) * Math.cos(azim),
+      };
+      const poseTarget = { x: -48, y: 28, z: 0 };
       flyingUntilRef.current = Date.now() + 2600;
-      fg.cameraPosition({ x: 0, y: 70, z: 980 }, { x: 0, y: 0, z: 0 }, 0);
+      fg.cameraPosition({ x: 0, y: 70, z: 1750 }, { x: 0, y: 0, z: 0 }, 0);
       window.setTimeout(() => {
-        graphRef.current?.zoomToFit(1600, 40);
+        graphRef.current?.cameraPosition(pose, poseTarget, 1600);
       }, 700);
     };
     setup();
@@ -611,8 +631,10 @@ export default function AtlasMap3D() {
           Math.floor(linkHash(link) * NEBULA_LINK_COLORS.length)
         ];
       }
-      /* while something is active, unrelated threads almost disappear */
-      return activeId ? 'rgba(222,214,196,0.05)' : 'rgba(222,214,196,0.45)';
+      /* while something is active, unrelated threads almost disappear
+         (alphas compensate for the raised linkOpacity, so resting and
+         dimmed threads render exactly as before — only lit ones gain) */
+      return activeId ? 'rgba(222,214,196,0.032)' : 'rgba(222,214,196,0.29)';
     },
     [isLinkLit, activeId],
   );
@@ -675,7 +697,7 @@ export default function AtlasMap3D() {
           nodeThreeObjectExtend={false}
           linkColor={linkColor}
           linkWidth={linkWidth}
-          linkOpacity={0.55}
+          linkOpacity={0.85}
           linkCurvature={(l: LinkObject) => 0.1 + 0.14 * linkHash(l)}
           linkCurveRotation={(l: LinkObject) => linkHash(l) * Math.PI * 2}
           linkDirectionalParticles={linkParticles}

@@ -276,17 +276,25 @@ const FLOW_RING_FRAGMENT = /* glsl */ `
   uniform float uSpeed;
   varying float vProgress;
 
-  float bump(float x) {
+  float bump(float x, float w) {
     float d = min(x, 1.0 - x); /* wrapped distance to the pulse head */
-    float b = smoothstep(uWidth, 0.0, d);
+    float b = smoothstep(w, 0.0, d);
     return b * b;
   }
 
   void main() {
+    /* the main pulse pair — bright enough at the crest to catch a small
+       halo of bloom as it travels */
     float head = uTime * uSpeed;
-    float glowA = bump(fract(vProgress - head));
-    float glowB = bump(fract(vProgress - head + 0.5));
-    float glow = max(glowA, glowB) * uPulse;
+    float glowA = bump(fract(vProgress - head), uWidth);
+    float glowB = bump(fract(vProgress - head + 0.5), uWidth);
+    /* a second, fainter pair drifting at its own slower pace, so the
+       current reads as flowing light rather than a metronome */
+    float head2 = uTime * uSpeed * 0.62 + 0.31;
+    float glowC = bump(fract(vProgress - head2), uWidth * 0.7);
+    float glowD = bump(fract(vProgress - head2 + 0.5), uWidth * 0.7);
+    float glow = max(glowA, glowB) * uPulse
+               + max(glowC, glowD) * uPulse * 0.42;
     vec3 col = uColor * uBase + uPulseColor * glow;
     gl_FragColor = vec4(col, 1.0);
   }
@@ -305,7 +313,7 @@ export function makeFlowingRing(
   segments: number,
   speed: number,
   pulseColor: string = ATLAS3D.amber,
-  pulseStrength = 0.52,
+  pulseStrength = 0.85,
 ): FlowingRing {
   const pts = wobblyRingPoints(radius, seed, segments);
   const geom = new THREE.BufferGeometry().setFromPoints(pts);
@@ -319,7 +327,7 @@ export function makeFlowingRing(
       uPulseColor: { value: new THREE.Color(pulseColor) },
       uBase: { value: baseOpacity },
       uPulse: { value: pulseStrength },
-      uWidth: { value: 0.085 },
+      uWidth: { value: 0.11 },
       uTime: { value: 0 },
       uSpeed: { value: speed },
     },
@@ -401,6 +409,7 @@ const MEMBRANE_VERTEX = /* glsl */ `
   uniform float uTime;
   varying vec3 vNormal;
   varying vec3 vView;
+  varying vec3 vWorldNormal;
   void main() {
     float w =
       sin(position.x * 0.012 + uTime * 0.32) +
@@ -409,6 +418,7 @@ const MEMBRANE_VERTEX = /* glsl */ `
     vec3 p = position + normal * w * 9.0;
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     vNormal = normalize(normalMatrix * normal);
+    vWorldNormal = normalize(mat3(modelMatrix) * normal);
     vView = normalize(-mv.xyz);
     gl_Position = projectionMatrix * mv;
   }
@@ -417,12 +427,25 @@ const MEMBRANE_VERTEX = /* glsl */ `
 const MEMBRANE_FRAGMENT = /* glsl */ `
   uniform vec3 uColorA;
   uniform vec3 uColorB;
+  uniform vec3 uLightDir;
   uniform float uOpacity;
   varying vec3 vNormal;
   varying vec3 vView;
+  varying vec3 vWorldNormal;
   void main() {
-    float f = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.1);
-    gl_FragColor = vec4(mix(uColorA, uColorB, f), f * uOpacity);
+    vec3 n = normalize(vWorldNormal);
+    if (!gl_FrontFacing) n = -n;
+    /* soft lambert against a fixed warm light (the same upper-warm glow
+       the environment map carries, in family with the golden nucleus):
+       one side of the vast shell is gently luminous and the form falls
+       into shadow across its own curve — a lit volume, not a vignette */
+    float lam = max(dot(n, normalize(uLightDir)), 0.0);
+    float shade = 0.22 + 0.95 * pow(lam, 1.3);
+    float f = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.5);
+    /* the rim runs slightly hotter on the lit side, so the boundary
+       catches a whisper of bloom where the light grazes it */
+    vec3 col = mix(uColorA, uColorB, f) * shade + uColorB * f * lam * 0.5;
+    gl_FragColor = vec4(col, f * uOpacity * (0.4 + 0.85 * lam));
   }
 `;
 
@@ -464,7 +487,9 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
       uTime: { value: 0 },
       uColorA: { value: new THREE.Color('#d9d2c0') },
       uColorB: { value: new THREE.Color('#e6d3a8') },
-      uOpacity: { value: 0.028 },
+      /* fixed warm key light, in family with the nucleus/env warm glow */
+      uLightDir: { value: new THREE.Vector3(0.5, 0.62, 0.35).normalize() },
+      uOpacity: { value: 0.034 },
     },
     vertexShader: MEMBRANE_VERTEX,
     fragmentShader: MEMBRANE_FRAGMENT,
