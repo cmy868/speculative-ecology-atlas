@@ -40,13 +40,13 @@ export default function AmbientField() {
       canvas.height = Math.floor(h * dpr);
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
-      const count = Math.min(90, Math.max(28, Math.floor((w * h) / 22000)));
+      const count = Math.min(110, Math.max(32, Math.floor((w * h) / 19000)));
       particles = Array.from({ length: count }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
         vx: (Math.random() - 0.5) * 0.14,
         vy: (Math.random() - 0.5) * 0.14,
-        r: 0.6 + Math.random() * 1.4,
+        r: 0.7 + Math.random() * 1.6,
         phase: Math.random() * Math.PI * 2,
         speed: 0.4 + Math.random() * 0.9,
         warm: Math.random() < 0.35,
@@ -85,7 +85,7 @@ export default function AmbientField() {
           const dy = a.y - b.y;
           const d2 = dx * dx + dy * dy;
           if (d2 < LINK_DISTANCE * LINK_DISTANCE) {
-            const alpha = 0.1 * (1 - Math.sqrt(d2) / LINK_DISTANCE);
+            const alpha = 0.13 * (1 - Math.sqrt(d2) / LINK_DISTANCE);
             ctx.strokeStyle = `${linePrefix}${alpha.toFixed(3)})`;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
@@ -97,7 +97,7 @@ export default function AmbientField() {
 
       for (const p of particles) {
         const twinkle = 0.55 + 0.45 * Math.sin(t * p.speed + p.phase);
-        const alpha = (p.warm ? 0.42 : 0.32) * twinkle;
+        const alpha = (p.warm ? 0.5 : 0.38) * twinkle;
         ctx.fillStyle = `${p.warm ? goldPrefix : ivoryPrefix}${alpha.toFixed(3)})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);

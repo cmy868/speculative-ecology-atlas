@@ -191,9 +191,10 @@ export default function AtlasMap3D() {
   }, []);
 
   /* —————————————————— focus / dimming ——————————————————
-     Applied imperatively to the Three.js materials: everything outside the
-     hovered/selected neighborhood fades to near-dark; concept labels are
-     revealed for the active neighborhood. */
+     Sets per-node targets; the frame driver eases the materials toward
+     them every frame, so hover/selection dims breathe instead of snapping.
+     Everything outside the hovered/selected neighborhood recedes to
+     near-dark; concept labels fade in for the active neighborhood. */
   const applyFocus = useCallback(() => {
     const hover = hoverRef.current;
     const sel = selectedRef.current;
@@ -201,15 +202,11 @@ export default function AtlasMap3D() {
     for (const [id, h] of handlesRef.current) {
       const focused =
         !active || id === active || (neighbors.get(active)?.has(id) ?? false);
-      const mul = focused ? 1 : 0.06;
       const emphasized = id === hover || id === sel;
-
-      for (const f of h.fadeables) f.set(f.base * mul);
-      h.focusMul = mul * (emphasized ? 1.4 : 1);
-      h.glow.opacity = Math.min(1, h.glowBase * h.focusMul);
-
-      if (h.type === 'concept' && h.label) {
-        h.label.visible = id === sel || (active !== null && focused);
+      h.focusTarget = focused ? 1 : 0.06;
+      h.emphTarget = emphasized ? 1.25 : 1;
+      if (h.type === 'concept') {
+        h.labelTarget = id === sel || (active !== null && focused);
       }
     }
   }, [neighbors]);
@@ -282,6 +279,17 @@ export default function AtlasMap3D() {
       /* real lighting: warm point light at the nucleus + shaped fills,
          and a small PMREM environment for glass/metal reflections */
       lightsRef.current = setupLights(scene);
+
+      /* clip geometry that drifts right up against the lens — a link tube
+         passing ~20 units from the camera otherwise smears into a huge
+         gray band across the frame. Nothing is ever meant to be viewed
+         closer than the fly-to distances (≥95), so 30 is safe. */
+      const camera = fg.camera() as THREE.PerspectiveCamera;
+      camera.near = 30;
+      camera.updateProjectionMatrix();
+      const controls = fg.controls() as { minDistance?: number };
+      if (controls) controls.minDistance = 45;
+
       const renderer = fg.renderer() as THREE.WebGLRenderer;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.28;
@@ -289,7 +297,7 @@ export default function AtlasMap3D() {
       scene.environment = envMapRef.current;
 
       /* GPU particle field — fewer stars on small screens */
-      const starCount = window.innerWidth < 720 ? 1100 : 2600;
+      const starCount = window.innerWidth < 720 ? 1300 : 3200;
       const starfield = makeStarfield(starCount);
       starfieldRef.current = starfield;
       scene.add(starfield.points);
@@ -300,12 +308,13 @@ export default function AtlasMap3D() {
       scene.add(membrane.group);
 
       /* subtle bloom: the threshold is set high so only the hot cores and
-         lit nebula threads bloom, never the ivory labels */
+         lit nebula threads bloom — and gently, so lit links keep their
+         violet/magenta/cyan hue instead of blowing out to white */
       const bloom = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
-        1.25, // strength
-        0.65, // radius
-        0.72, // threshold — labels (#ded7c4) sit below this luminance
+        0.85, // strength
+        0.55, // radius
+        0.8, // threshold — labels (#ded7c4) sit below this luminance
       );
       fg.postProcessingComposer().addPass(bloom);
 
@@ -330,7 +339,22 @@ export default function AtlasMap3D() {
           membraneRef.current?.update(t, dt);
         }
 
+        /* ease every node toward its focus targets — the hover-dim breathes
+           in over ~a quarter second instead of snapping */
+        const k = reduced ? 1 : 1 - Math.exp(-dt * 7);
         for (const h of handlesRef.current.values()) {
+          h.focusMul += (h.focusTarget - h.focusMul) * k;
+          h.emphMul += (h.emphTarget - h.emphMul) * k;
+          for (const f of h.fadeables) f.set(f.base * h.focusMul);
+          if (!h.breathe) {
+            h.glow.opacity = Math.min(1, h.glowBase * h.focusMul * h.emphMul);
+          }
+          if (h.type === 'concept' && h.label) {
+            h.labelMul += ((h.labelTarget ? 1 : 0) - h.labelMul) * k;
+            h.label.material.opacity = 0.9 * h.labelMul;
+            h.label.visible = h.labelMul > 0.02;
+          }
+
           for (const ring of h.rings) ring.obj.rotation.y += dt * ring.speed;
           if (h.breathe) {
             const s = 1 + 0.055 * Math.sin(t * 0.55);
@@ -338,7 +362,10 @@ export default function AtlasMap3D() {
             /* let the nucleus glow and its light breathe with it */
             h.glow.opacity = Math.min(
               1,
-              h.glowBase * h.focusMul * (0.92 + 0.08 * Math.sin(t * 0.55)),
+              h.glowBase *
+                h.focusMul *
+                h.emphMul *
+                (0.92 + 0.08 * Math.sin(t * 0.55)),
             );
             const lights = lightsRef.current;
             if (lights) {
@@ -482,9 +509,29 @@ export default function AtlasMap3D() {
       const k = (r + distance) / r;
       pos = { x: x * k, y: y * k, z: z * k };
     }
+
+    /* the reading panel covers the right side (desktop) or the bottom
+       (small screens) — shift the look-at so the node settles in the
+       unobstructed part of the frame instead of hiding behind glass */
+    const dir = new THREE.Vector3(x - pos.x, y - pos.y, z - pos.z).normalize();
+    const shift = distance * 0.2;
+    const target = { x, y, z };
+    if (window.innerWidth <= 720) {
+      target.y -= shift; // node rises into the top half above the sheet
+    } else {
+      const right = new THREE.Vector3()
+        .crossVectors(dir, new THREE.Vector3(0, 1, 0))
+        .normalize();
+      if (right.lengthSq() > 0.5) {
+        target.x += right.x * shift; // node slides left of the panel
+        target.y += right.y * shift;
+        target.z += right.z * shift;
+      }
+    }
+
     flyingUntilRef.current = Date.now() + 1900;
     lastInteractionRef.current = Date.now();
-    fg.cameraPosition(pos, { x, y, z }, 1700);
+    fg.cameraPosition(pos, target, 1700);
   }, []);
 
   const handleSelect = useCallback(
@@ -508,7 +555,7 @@ export default function AtlasMap3D() {
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('node');
     if (!id || !nodeById.has(id)) return;
-    const timer = window.setTimeout(() => handleSelect(id), 2600);
+    const timer = window.setTimeout(() => handleSelect(id), 3600);
     return () => window.clearTimeout(timer);
   }, [handleSelect]);
 
@@ -555,13 +602,15 @@ export default function AtlasMap3D() {
   );
 
   const linkWidth = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? 0.75 : 0.32),
+    (link: LinkObject) => (isLinkLit(link) ? 0.55 : 0.32),
     [isLinkLit],
   );
 
+  /* while a node is active, unrelated links lose their travelers entirely —
+     otherwise stray gold sparks float over the dimmed field */
   const linkParticles = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? 6 : 2),
-    [isLinkLit],
+    (link: LinkObject) => (isLinkLit(link) ? 4 : activeId ? 0 : 2),
+    [isLinkLit, activeId],
   );
 
   const linkParticleColor = useCallback(
@@ -575,7 +624,7 @@ export default function AtlasMap3D() {
   );
 
   const linkParticleWidth = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? 1.7 : 1.0),
+    (link: LinkObject) => (isLinkLit(link) ? 1.35 : 1.0),
     [isLinkLit],
   );
 
@@ -632,10 +681,10 @@ export default function AtlasMap3D() {
             lastInteractionRef.current = Date.now();
           }}
           onBackgroundClick={handleDeselect}
-          d3AlphaDecay={0.009}
+          d3AlphaDecay={0.02}
           d3VelocityDecay={0.3}
           warmupTicks={90}
-          cooldownTime={15000}
+          cooldownTime={10000}
         />
       )}
 

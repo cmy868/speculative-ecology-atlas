@@ -157,7 +157,7 @@ export function setupLights(scene: THREE.Scene): AtlasLights {
 
   scene.add(new THREE.AmbientLight('#9c8fb5', 0.42));
 
-  const nucleus = new THREE.PointLight('#ffc37c', 90000, 0, 2);
+  const nucleus = new THREE.PointLight('#ffc37c', 70000, 0, 2);
   nucleus.position.set(0, 0, 0);
   scene.add(nucleus);
 
@@ -358,8 +358,8 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
   const ringPlane = new THREE.Group();
   ringPlane.rotation.x = Math.PI / 2 - 0.14;
   ringPlane.rotation.y = 0.06;
-  const ringA = makeWobblyRing(radius, ATLAS3D.ivory, 0.3, 9001, 260);
-  const ringB = makeWobblyRing(radius * 1.05, ATLAS3D.ivory, 0.16, 9002, 260);
+  const ringA = makeWobblyRing(radius, ATLAS3D.ivory, 0.26, 9001, 260);
+  const ringB = makeWobblyRing(radius * 1.05, ATLAS3D.ivory, 0.13, 9002, 260);
   ringB.rotation.x = 0.05;
   ringPlane.add(ringA, ringB);
   group.add(ringPlane);
@@ -370,7 +370,7 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
       uTime: { value: 0 },
       uColorA: { value: new THREE.Color('#d9d2c0') },
       uColorB: { value: new THREE.Color('#8f7bc0') },
-      uOpacity: { value: 0.022 },
+      uOpacity: { value: 0.012 },
     },
     vertexShader: MEMBRANE_VERTEX,
     fragmentShader: MEMBRANE_FRAGMENT,
@@ -489,12 +489,14 @@ export function makeStarfield(count: number): Starfield {
 
     const roll = Math.random();
     tmp.copy(roll < 0.62 ? ivory : roll < 0.86 ? gold : roll < 0.95 ? violet : cyan);
-    const intensity = 0.35 + Math.random() * 0.65;
+    /* a handful of "hero" stars give the field depth hierarchy */
+    const hero = Math.random() < 0.05;
+    const intensity = hero ? 0.85 + Math.random() * 0.15 : 0.35 + Math.random() * 0.65;
     colors[i * 3] = tmp.r * intensity;
     colors[i * 3 + 1] = tmp.g * intensity;
     colors[i * 3 + 2] = tmp.b * intensity;
 
-    sizes[i] = 0.8 + Math.random() * 1.9;
+    sizes[i] = (0.9 + Math.random() * 2.1) * (hero ? 1.8 : 1);
     phases[i] = Math.random() * Math.PI * 2;
     speeds[i] = 0.35 + Math.random() * 0.9;
   }
@@ -545,8 +547,16 @@ export interface NodeArtHandle {
   glow: THREE.SpriteMaterial;
   glowBase: number;
   glowBaseColor: THREE.Color;
-  /** current focus multiplier (set by applyFocus, read by the frame driver) */
+  /** current focus multiplier — lerped toward focusTarget by the frame driver */
   focusMul: number;
+  /** where applyFocus wants the multiplier to go */
+  focusTarget: number;
+  /** hover/selection emphasis, also lerped (1 → ~1.25) */
+  emphMul: number;
+  emphTarget: number;
+  /** concept labels fade in/out instead of popping */
+  labelMul: number;
+  labelTarget: boolean;
   core?: THREE.MeshStandardMaterial;
   coreBaseColor?: THREE.Color;
   label?: SpriteText;
@@ -585,7 +595,7 @@ function makeLabel(
      'italic' as the weight yields a valid italic CSS font shorthand. */
   if (italic) label.fontWeight = 'italic';
   /* slight dark backing keeps text legible against the particle field */
-  label.backgroundColor = 'rgba(0,0,0,0.34)';
+  label.backgroundColor = 'rgba(0,0,0,0.22)';
   label.padding = 1.2;
   label.borderRadius = 1.5;
   label.material.depthWrite = false;
@@ -701,7 +711,7 @@ export function makeNodeArt(
     core = new THREE.MeshStandardMaterial({
       color: '#ffd9a0',
       emissive: '#ffb45e',
-      emissiveIntensity: 2.6,
+      emissiveIntensity: 1.7,
       roughness: 0.35,
       metalness: 0.1,
       transparent: true,
@@ -712,35 +722,35 @@ export function makeNodeArt(
 
     addRim(7.8, '#ffcf8a', 0.55, 2.2);
 
-    glowBase = 0.66;
-    glowSprite = makeGlowSprite(glowTexture, ATLAS3D.gold, 44, glowBase);
+    glowBase = 0.55;
+    glowSprite = makeGlowSprite(glowTexture, ATLAS3D.gold, 36, glowBase);
     group.add(glowSprite);
 
     /* the framework's concentric hand-drawn rings; the middle one is the
        red-orange Duo-Intelligence ring with its two small circles */
-    addRing(14.5, ATLAS3D.ivory, 0.42, seed + 1, 0.05, 0.16);
-    const duo = addRing(20.5, ATLAS3D.accent, 0.8, seed + 2, -0.034, -0.1);
-    addRing(26.5, ATLAS3D.ivory, 0.16, seed + 3, 0.021, 0.28);
+    addRing(14.5, ATLAS3D.ivory, 0.5, seed + 1, 0.05, 0.16);
+    const duo = addRing(20.5, ATLAS3D.accent, 0.92, seed + 2, -0.034, -0.1);
+    addRing(26.5, ATLAS3D.ivory, 0.24, seed + 3, 0.021, 0.28);
 
     /* two small circles riding the Duo-Intelligence ring (from the diagram) */
     for (const angle of [0.5, 0.5 + Math.PI]) {
       const orbMat = new THREE.MeshStandardMaterial({
         color: '#e8703f',
         emissive: '#c9502e',
-        emissiveIntensity: 1.6,
+        emissiveIntensity: 2.4,
         roughness: 0.4,
         metalness: 0.15,
         transparent: true,
         opacity: 1,
       });
-      const orb = new THREE.Mesh(new THREE.SphereGeometry(1.5, 20, 14), orbMat);
+      const orb = new THREE.Mesh(new THREE.SphereGeometry(1.8, 20, 14), orbMat);
       orb.position.set(Math.cos(angle) * 20.5, 0, Math.sin(angle) * 20.5);
       orb.raycast = () => undefined;
       duo.add(orb); // ride the ring's rotation
       fadeables.push(fadeMaterial(orbMat, 1));
     }
 
-    label = makeLabel(wrapTitle(node.title, 26), 4.0, ATLAS3D.label, false, -30);
+    label = makeLabel(wrapTitle(node.title, 26), 4.8, ATLAS3D.label, false, -35);
     group.add(label);
     fadeables.push(fadeMaterial(label.material, 1));
 
@@ -761,8 +771,8 @@ export function makeNodeArt(
       attenuationColor: new THREE.Color('#e9c98e'),
       attenuationDistance: 16,
       envMapIntensity: 1.6,
-      emissive: '#3a2f1d',
-      emissiveIntensity: 1.0,
+      emissive: '#4a3a20',
+      emissiveIntensity: 1.05,
       transparent: true,
       opacity: 1,
     });
@@ -771,7 +781,7 @@ export function makeNodeArt(
 
     addRim(8.5, '#f2e7c9', 0.72, 2.8);
 
-    glowBase = 0.62;
+    glowBase = 0.52;
     glowSprite = makeGlowSprite(glowTexture, ATLAS3D.gold, 36, glowBase);
     group.add(glowSprite);
 
@@ -836,11 +846,12 @@ export function makeNodeArt(
     glowSprite = makeGlowSprite(glowTexture, '#a698c4', 10, glowBase);
     group.add(glowSprite);
 
-    /* italic ivory label, revealed on hover (see applyFocus in AtlasMap3D) */
+    /* italic ivory label, faded in on hover by the frame driver (labelMul) —
+       deliberately NOT in fadeables: its opacity is driven separately */
     label = makeLabel(wrapTitle(node.title, 20), 2.6, ATLAS3D.labelSoft, true, -5.2);
     label.visible = false;
+    label.material.opacity = 0;
     group.add(label);
-    fadeables.push(fadeMaterial(label.material, 0.9));
 
     group.add(makeHitSphere(4.6));
   }
@@ -857,6 +868,11 @@ export function makeNodeArt(
     glowBase,
     glowBaseColor: glow.color.clone(),
     focusMul: 1,
+    focusTarget: 1,
+    emphMul: 1,
+    emphTarget: 1,
+    labelMul: 0,
+    labelTarget: false,
     core,
     coreBaseColor: core?.color.clone(),
     label,
