@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import SiteHeader from '@/components/SiteHeader';
-import AtlasMap from '@/components/AtlasMap';
+import AtlasMap3D from '@/components/AtlasMap3D';
 
 export const metadata: Metadata = {
   title: 'Atlas — Speculative Ecology in the Age of Generative AI',
@@ -12,7 +12,7 @@ export default function AtlasPage() {
   return (
     <div className="atlas-page">
       <SiteHeader />
-      <AtlasMap />
+      <AtlasMap3D />
       <p className="atlas-footnote">
         The dissertation is a snapshot; this atlas is the ecology that keeps growing.
       </p>

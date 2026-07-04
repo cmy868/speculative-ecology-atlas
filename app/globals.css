@@ -1,29 +1,32 @@
 /* ————————————————————————————————————————————————
    Speculative Ecology — A Living Atlas
-   ink, paper, and a single thread of cinnabar
+   deep space, warm gold, ivory serif — after Domy Reverie
+   and the hand-drawn framework diagram
    ———————————————————————————————————————————————— */
 
 :root,
 [data-theme='dark'] {
-  --bg: #16140f;
-  --bg-raised: #1c1916;
-  --bg-overlay: rgba(28, 25, 22, 0.93);
+  --bg: #07080f;
+  --bg-raised: #0d0f1a;
+  --bg-overlay: rgba(10, 12, 20, 0.78);
   --ink: #e8e2d4;
-  --ink-soft: #aaa28f;
-  --ink-faint: #7c7464;
+  --ink-soft: #aca489;
+  --ink-faint: #7d775f;
   --line: rgba(232, 226, 212, 0.14);
   --line-strong: rgba(232, 226, 212, 0.36);
-  --accent: #b2452f;
-  --accent-soft: rgba(178, 69, 47, 0.16);
+  --accent: #c9502e;
+  --accent-soft: rgba(201, 80, 46, 0.18);
+  --gold: #d9b36c;
+  --gold-soft: rgba(217, 179, 108, 0.2);
   --dot-territory: #e8e2d4;
-  --dot-project: #a39a87;
+  --dot-project: #d9b36c;
   color-scheme: dark;
 }
 
 [data-theme='light'] {
-  --bg: #fdfcf9;
-  --bg-raised: #f6f3eb;
-  --bg-overlay: rgba(253, 252, 249, 0.95);
+  --bg: #faf7ef;
+  --bg-raised: #f2eee2;
+  --bg-overlay: rgba(250, 247, 239, 0.92);
   --ink: #26221a;
   --ink-soft: #6e6655;
   --ink-faint: #9a9180;
@@ -31,8 +34,10 @@
   --line-strong: rgba(38, 34, 26, 0.38);
   --accent: #b2452f;
   --accent-soft: rgba(178, 69, 47, 0.1);
+  --gold: #a8823f;
+  --gold-soft: rgba(168, 130, 63, 0.16);
   --dot-territory: #2a261e;
-  --dot-project: #6f6757;
+  --dot-project: #8a6f3c;
   color-scheme: light;
 }
 
@@ -215,7 +220,7 @@ code {
 .hero-subtitle {
   font-style: italic;
   font-size: clamp(1.15rem, 2.4vw, 1.5rem);
-  color: var(--accent);
+  color: var(--gold);
   margin: 1.3rem 0 0;
   animation: rise 0.9s ease 0.24s both;
 }
@@ -309,10 +314,29 @@ code {
 
 /* ———————————————————— atlas ———————————————————— */
 
+/* The 3D atlas is an artwork with a fixed deep-space palette, so the page
+   forces dark styling regardless of the visitor's chosen site theme. */
 .atlas-page {
   position: relative;
   height: 100svh;
   overflow: hidden;
+  --bg: #07080f;
+  --bg-raised: #0d0f1a;
+  --bg-overlay: rgba(10, 12, 20, 0.78);
+  --ink: #e8e2d4;
+  --ink-soft: #aca489;
+  --ink-faint: #7d775f;
+  --line: rgba(232, 226, 212, 0.14);
+  --line-strong: rgba(232, 226, 212, 0.36);
+  --accent: #c9502e;
+  --accent-soft: rgba(201, 80, 46, 0.18);
+  --gold: #d9b36c;
+  --gold-soft: rgba(217, 179, 108, 0.2);
+  --dot-territory: #e8e2d4;
+  --dot-project: #d9b36c;
+  background: var(--bg);
+  color: var(--ink);
+  color-scheme: dark;
 }
 
 .atlas-canvas {
@@ -365,7 +389,7 @@ code {
 }
 
 .legend-dot.type-center {
-  background: var(--accent);
+  background: var(--gold);
 }
 
 .legend-dot.type-territory {
@@ -425,9 +449,11 @@ code {
   z-index: 30;
   width: min(430px, 100vw);
   background: var(--bg-overlay);
-  border-left: 1px solid var(--line);
+  border-left: 1px solid var(--gold-soft);
   padding: 5.4rem 2.3rem 2.6rem;
   overflow-y: auto;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   animation: panel-in 0.45s ease both;
 }
 
@@ -459,7 +485,11 @@ code {
   border-radius: 999px;
 }
 
-.type-badge.type-project,
+.type-badge.type-project {
+  color: var(--gold);
+  border-color: var(--gold-soft);
+}
+
 .type-badge.type-center {
   color: var(--accent);
   border-color: var(--accent-soft);
@@ -517,14 +547,14 @@ code {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   text-decoration: none;
-  color: var(--accent);
-  border-bottom: 1px solid var(--accent-soft);
+  color: var(--gold);
+  border-bottom: 1px solid var(--gold-soft);
   padding-bottom: 0.14rem;
   transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .panel-external-link:hover {
-  border-color: var(--accent);
+  border-color: var(--gold);
 }
 
 .tag-list {
@@ -603,7 +633,7 @@ code {
 }
 
 .relation-dot.type-center {
-  background: var(--accent);
+  background: var(--gold);
 }
 
 .relation-dot.type-territory {

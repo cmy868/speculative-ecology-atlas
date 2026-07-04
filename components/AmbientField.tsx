@@ -9,6 +9,10 @@ interface Particle {
   vx: number;
   vy: number;
   r: number;
+  /** twinkle phase + speed, and a warmth roll (gold vs ivory) */
+  phase: number;
+  speed: number;
+  warm: boolean;
 }
 
 const LINK_DISTANCE = 120;
@@ -50,6 +54,9 @@ export default function AmbientField() {
         vx: (Math.random() - 0.5) * 0.14,
         vy: (Math.random() - 0.5) * 0.14,
         r: 0.6 + Math.random() * 1.4,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.4 + Math.random() * 0.9,
+        warm: Math.random() < 0.35,
       }));
     };
 
@@ -60,8 +67,12 @@ export default function AmbientField() {
       ctx.clearRect(0, 0, w, h);
 
       const dark = themeRef.current === 'dark';
-      const dotColor = dark ? 'rgba(232,226,212,0.34)' : 'rgba(42,38,30,0.26)';
-      const linePrefix = dark ? 'rgba(232,226,212,' : 'rgba(42,38,30,';
+      /* dark: the atlas's sky — twinkling ivory dust with warm gold sparks;
+         light: the original calm ink dots */
+      const ivoryPrefix = dark ? 'rgba(232,226,212,' : 'rgba(42,38,30,';
+      const goldPrefix = dark ? 'rgba(233,201,142,' : 'rgba(42,38,30,';
+      const linePrefix = ivoryPrefix;
+      const t = performance.now() / 1000;
 
       if (advance) {
         for (const p of particles) {
@@ -93,8 +104,12 @@ export default function AmbientField() {
         }
       }
 
-      ctx.fillStyle = dotColor;
       for (const p of particles) {
+        const twinkle = dark
+          ? 0.55 + 0.45 * Math.sin(t * p.speed + p.phase)
+          : 1;
+        const alpha = (p.warm && dark ? 0.42 : 0.32) * twinkle;
+        ctx.fillStyle = `${p.warm ? goldPrefix : ivoryPrefix}${alpha.toFixed(3)})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
