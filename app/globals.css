@@ -392,26 +392,159 @@ code {
   color: var(--ink-faint);
 }
 
-.atlas-legend {
+/* ——————————— atlas index (side navigation) ———————————
+   A collapsible liquid-glass panel listing every node by type; it
+   absorbs the old legend (the type dots now head each group). */
+
+.atlas-index {
   position: fixed;
-  left: 1.4rem;
+  left: 1.2rem;
+  top: 5.9rem;
   bottom: 1.4rem;
-  z-index: 10;
+  z-index: 20;
+  width: min(248px, calc(100vw - 2.4rem));
+  border-radius: 22px;
   display: flex;
   flex-direction: column;
-  gap: 0.34rem;
-  padding: 0.95rem 1.25rem;
-  font-size: 0.62rem;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  pointer-events: none;
+  /* same deeper tint as the node panel, so entries stay readable */
+  background:
+    linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.012) 34%,
+      rgba(140, 110, 220, 0.05) 80%,
+      rgba(255, 255, 255, 0.03)
+    ),
+    rgba(5, 5, 8, 0.62);
+  animation: index-in 0.45s ease both;
 }
 
-.atlas-legend span {
-  display: inline-flex;
+@keyframes index-in {
+  from {
+    opacity: 0;
+    transform: translateX(-22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.atlas-index-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.05rem 0.9rem 0.7rem 1.35rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.atlas-index-title {
+  font-size: 0.62rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.atlas-index-close {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  width: 1.7rem;
+  height: 1.7rem;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0 0.14rem;
+  cursor: pointer;
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+.atlas-index-close:hover {
+  color: var(--gold-bright);
+  border-color: rgba(217, 179, 108, 0.45);
+}
+
+.atlas-index-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.9rem 1.1rem 1.2rem 1.35rem;
+}
+
+.atlas-index-group + .atlas-index-group {
+  margin-top: 1.3rem;
+}
+
+.atlas-index-group h3 {
+  display: flex;
   align-items: center;
   gap: 0.55rem;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 0.4rem;
+}
+
+.atlas-index-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.atlas-index-group li button {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  padding: 0.3rem 0.55rem;
+  margin-left: -0.55rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.98rem;
+  line-height: 1.32;
+  text-align: left;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+.atlas-index-group li button:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.atlas-index-group li button.is-active {
+  color: var(--gold-bright);
+  background: rgba(217, 179, 108, 0.1);
+}
+
+/* the collapsed state: a small vertical glass tab on the left edge */
+.atlas-index-tab {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  border-radius: 0 14px 14px 0;
+  border-left: none;
+  writing-mode: vertical-rl;
+  padding: 1.05rem 0.5rem;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.atlas-index-tab:hover {
+  color: var(--gold-bright);
 }
 
 .legend-dot {
@@ -733,6 +866,7 @@ code {
   max-width: 46rem;
   margin: 0 auto;
   padding: 9.5rem 1.5rem 5rem;
+  overflow-wrap: break-word; /* long titles/URLs never escape the column */
 }
 
 .dissertation-header h1 {
@@ -807,10 +941,13 @@ code {
   line-height: 1.35;
 }
 
-.section-note {
+/* the `>` selector keeps specificity above `.dissertation-section > p`,
+   whose `margin: 0 0 1rem` used to zero this note's top margin and jam
+   it against the download button / citation block */
+.dissertation-section > .section-note {
   font-size: 0.8rem;
   color: var(--ink-faint);
-  margin-top: 1rem;
+  margin: 1.2rem 0 0;
 }
 
 .committee-list {
@@ -875,15 +1012,19 @@ code {
     letter-spacing: 0.1em;
   }
 
-  .atlas-legend {
-    left: 0.9rem;
-    bottom: 0.9rem;
-    padding: 0.75rem 0.95rem;
+  .atlas-index {
+    left: 0.7rem;
+    top: 5.4rem;
+    bottom: auto;
+    max-height: min(58svh, 30rem);
+    width: min(76vw, 280px);
   }
 
-  /* the bottom-sheet panel would sit right on top of the legend */
-  .atlas-canvas:has(.node-panel) .atlas-legend {
-    opacity: 0;
+  /* the bottom-sheet reading panel takes over the screen — the index
+     (and its tab) step aside until it closes */
+  .atlas-canvas:has(.node-panel) .atlas-index,
+  .atlas-canvas:has(.node-panel) .atlas-index-tab {
+    display: none;
   }
 
   .atlas-hint {

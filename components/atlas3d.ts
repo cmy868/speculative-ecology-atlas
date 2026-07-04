@@ -198,13 +198,11 @@ export function hashString(str: string): number {
  * ring is not a flat plot but a drawn line hovering in space.
  * Lies roughly in the XZ plane; rotate around Y for slow celestial motion.
  */
-export function makeWobblyRing(
+function wobblyRingPoints(
   radius: number,
-  color: string,
-  opacity: number,
   seed: number,
-  segments = 180,
-): THREE.Line {
+  segments: number,
+): THREE.Vector3[] {
   const rand = seeded(seed);
   const p1 = rand() * Math.PI * 2;
   const p2 = rand() * Math.PI * 2;
@@ -232,7 +230,17 @@ export function makeWobblyRing(
   }
   /* close the loop exactly so no seam shows */
   pts[pts.length - 1] = pts[0].clone();
+  return pts;
+}
 
+export function makeWobblyRing(
+  radius: number,
+  color: string,
+  opacity: number,
+  seed: number,
+  segments = 180,
+): THREE.Line {
+  const pts = wobblyRingPoints(radius, seed, segments);
   const geom = new THREE.BufferGeometry().setFromPoints(pts);
   const mat = new THREE.LineBasicMaterial({
     color,
@@ -241,6 +249,87 @@ export function makeWobblyRing(
     depthWrite: false,
   });
   return new THREE.Line(geom, mat);
+}
+
+/* ————————————————————— flowing-light ring —————————————————————
+   The two big enclosing rings carry a constant, very gentle current:
+   a soft luminous pulse traveling slowly along the drawn line. Each
+   vertex knows its progress (0..1) around the loop; the fragment
+   shader moves two smooth brightness bumps with a time uniform. */
+
+const FLOW_RING_VERTEX = /* glsl */ `
+  attribute float aProgress;
+  varying float vProgress;
+  void main() {
+    vProgress = aProgress;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const FLOW_RING_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform vec3 uPulseColor;
+  uniform float uBase;
+  uniform float uPulse;
+  uniform float uWidth;
+  uniform float uTime;
+  uniform float uSpeed;
+  varying float vProgress;
+
+  float bump(float x) {
+    float d = min(x, 1.0 - x); /* wrapped distance to the pulse head */
+    float b = smoothstep(uWidth, 0.0, d);
+    return b * b;
+  }
+
+  void main() {
+    float head = uTime * uSpeed;
+    float glowA = bump(fract(vProgress - head));
+    float glowB = bump(fract(vProgress - head + 0.5));
+    float glow = max(glowA, glowB) * uPulse;
+    vec3 col = uColor * uBase + uPulseColor * glow;
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+
+export interface FlowingRing {
+  line: THREE.Line;
+  material: THREE.ShaderMaterial;
+}
+
+export function makeFlowingRing(
+  radius: number,
+  color: string,
+  baseOpacity: number,
+  seed: number,
+  segments: number,
+  speed: number,
+  pulseColor: string = ATLAS3D.amber,
+  pulseStrength = 0.52,
+): FlowingRing {
+  const pts = wobblyRingPoints(radius, seed, segments);
+  const geom = new THREE.BufferGeometry().setFromPoints(pts);
+  const progress = new Float32Array(pts.length);
+  for (let i = 0; i < pts.length; i += 1) progress[i] = i / (pts.length - 1);
+  geom.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1));
+
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      uColor: { value: new THREE.Color(color) },
+      uPulseColor: { value: new THREE.Color(pulseColor) },
+      uBase: { value: baseOpacity },
+      uPulse: { value: pulseStrength },
+      uWidth: { value: 0.085 },
+      uTime: { value: 0 },
+      uSpeed: { value: speed },
+    },
+    vertexShader: FLOW_RING_VERTEX,
+    fragmentShader: FLOW_RING_FRAGMENT,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  return { line: new THREE.Line(geom, material), material };
 }
 
 /* ————————————————————— fresnel rim shells ————————————————————— */
@@ -358,19 +447,24 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
   const ringPlane = new THREE.Group();
   ringPlane.rotation.x = Math.PI / 2 - 0.14;
   ringPlane.rotation.y = 0.06;
-  const ringA = makeWobblyRing(radius, ATLAS3D.ivory, 0.26, 9001, 260);
-  const ringB = makeWobblyRing(radius * 1.05, ATLAS3D.ivory, 0.13, 9002, 260);
+  /* each big ring carries a constant, very gentle traveling light */
+  const flowA = makeFlowingRing(radius, ATLAS3D.ivory, 0.26, 9001, 260, 0.028);
+  const flowB = makeFlowingRing(radius * 1.05, ATLAS3D.ivory, 0.13, 9002, 260, -0.021);
+  const ringA = flowA.line;
+  const ringB = flowB.line;
   ringB.rotation.x = 0.05;
   ringPlane.add(ringA, ringB);
   group.add(ringPlane);
 
-  const shellGeom = new THREE.IcosahedronGeometry(radius * 1.08, 3);
+  /* a SMOOTH luminous field boundary — high-segment sphere (no visible
+     facets) with a soft warm fresnel rim; it whispers, never shouts */
+  const shellGeom = new THREE.SphereGeometry(radius * 1.08, 128, 96);
   const shellMat = new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
       uColorA: { value: new THREE.Color('#d9d2c0') },
-      uColorB: { value: new THREE.Color('#8f7bc0') },
-      uOpacity: { value: 0.012 },
+      uColorB: { value: new THREE.Color('#e6d3a8') },
+      uOpacity: { value: 0.028 },
     },
     vertexShader: MEMBRANE_VERTEX,
     fragmentShader: MEMBRANE_FRAGMENT,
@@ -403,6 +497,8 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
     group,
     update: (t: number, dt: number) => {
       shellMat.uniforms.uTime.value = t;
+      flowA.material.uniforms.uTime.value = t;
+      flowB.material.uniforms.uTime.value = t;
       /* the rings spin within their own plane; the shell breathes */
       ringA.rotation.y -= dt * 0.006;
       ringB.rotation.y += dt * 0.004;

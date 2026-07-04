@@ -12,6 +12,7 @@ import type {
 import { atlasNodes, nodeById } from '@/data/nodes';
 import { atlasLinks } from '@/data/links';
 import type { AtlasNode } from '@/types';
+import AtlasIndex from './AtlasIndex';
 import NodePanel from './NodePanel';
 import {
   ATLAS3D,
@@ -320,11 +321,14 @@ export default function AtlasMap3D() {
 
       /* per-frame driver, hooked onto the (never-culled) starfield:
          twinkle time, slow star drift, ring rotation, nucleus breathing,
-         membrane breathing, and the idle camera orbit */
+         membrane breathing, and the permanent floating camera */
       const up = new THREE.Vector3(0, 1, 0);
       const offset = new THREE.Vector3();
       const t0 = performance.now();
       let lastFrame = t0;
+      /* phase accumulator for the vertical breathing — advances only while
+         floating, so the bob never jumps when the drift resumes */
+      let bobPhase = 0;
 
       starfield.points.onBeforeRender = () => {
         const nowMs = performance.now();
@@ -378,20 +382,26 @@ export default function AtlasMap3D() {
           selectionRingRef.current.rotation.y -= dt * 0.12;
         }
 
-        /* ambient camera drift when idle (slow orbit around the current
-           look-at target, so it resumes from wherever the visitor left) */
+        /* the whole scene gently floats at all times: a soft continuous
+           orbit plus a sinusoidal vertical breathing. It starts right after
+           the intro framing, pauses while the visitor interacts or reads a
+           node, and resumes ~3s after they let go. */
         const now = Date.now();
-        const idle =
+        const floating =
           !reduced &&
-          now - lastInteractionRef.current > 9000 &&
+          now - lastInteractionRef.current > 3000 &&
           now > flyingUntilRef.current &&
           !selectedRef.current;
-        if (idle) {
+        if (floating) {
           const camera = fg.camera();
           const controls = fg.controls() as { target?: THREE.Vector3 };
           const target = controls?.target ?? new THREE.Vector3();
           offset.copy(camera.position).sub(target);
-          offset.applyAxisAngle(up, dt * 0.035);
+          offset.applyAxisAngle(up, dt * 0.06); // slow orbit, ~1.7x the old drift
+          /* vertical bob: add the delta of a sine so the offset stays bounded */
+          const prevBob = Math.sin(bobPhase);
+          bobPhase += dt * 0.42; // one breath ~15s
+          offset.y += (Math.sin(bobPhase) - prevBob) * 14;
           camera.position.copy(target).add(offset);
           camera.lookAt(target);
         }
@@ -421,17 +431,23 @@ export default function AtlasMap3D() {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
-  /* any pointer interaction defers the ambient drift */
+  /* any pointer interaction defers the ambient float; a held-down drag
+     keeps deferring it for as long as the visitor is steering */
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const touch = () => {
       lastInteractionRef.current = Date.now();
     };
+    const drag = (e: PointerEvent) => {
+      if (e.buttons !== 0) lastInteractionRef.current = Date.now();
+    };
     el.addEventListener('pointerdown', touch);
+    el.addEventListener('pointermove', drag, { passive: true });
     el.addEventListener('wheel', touch, { passive: true });
     return () => {
       el.removeEventListener('pointerdown', touch);
+      el.removeEventListener('pointermove', drag);
       el.removeEventListener('wheel', touch);
     };
   }, []);
@@ -602,7 +618,7 @@ export default function AtlasMap3D() {
   );
 
   const linkWidth = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? 0.55 : 0.32),
+    (link: LinkObject) => (isLinkLit(link) ? 0.66 : 0.32),
     [isLinkLit],
   );
 
@@ -624,7 +640,7 @@ export default function AtlasMap3D() {
   );
 
   const linkParticleWidth = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? 1.35 : 1.0),
+    (link: LinkObject) => (isLinkLit(link) ? 1.55 : 1.0),
     [isLinkLit],
   );
 
@@ -688,20 +704,7 @@ export default function AtlasMap3D() {
         />
       )}
 
-      <div className="atlas-legend glass glass-chip" aria-hidden>
-        <span>
-          <i className="legend-dot type-center" /> framework
-        </span>
-        <span>
-          <i className="legend-dot type-territory" /> territories
-        </span>
-        <span>
-          <i className="legend-dot type-project" /> projects
-        </span>
-        <span>
-          <i className="legend-dot type-concept" /> concepts
-        </span>
-      </div>
+      <AtlasIndex selectedId={selectedId} onSelect={handleSelect} />
 
       <p className="atlas-hint glass glass-chip">
         click a node to read · drag to orbit · scroll to zoom
