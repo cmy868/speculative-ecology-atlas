@@ -51,10 +51,10 @@ export const NEBULA_LINK_COLORS = [
 ] as const;
 
 export const NEBULA_PARTICLE_COLORS = [
-  '#d9b3ff',
-  '#ff9ed9',
-  '#9ef2f5',
-  '#c3b3ff',
+  '#e8ccff',
+  '#ffb3e2',
+  '#b8f7fa',
+  '#d8ccff',
 ] as const;
 
 /* ————————————————————— shared assets ————————————————————— */
@@ -301,7 +301,7 @@ const FLOW_RING_FRAGMENT = /* glsl */ `
 `;
 
 export interface FlowingRing {
-  line: THREE.Line;
+  object: THREE.Group;
   material: THREE.ShaderMaterial;
 }
 
@@ -313,21 +313,15 @@ export function makeFlowingRing(
   segments: number,
   speed: number,
   pulseColor: string = ATLAS3D.amber,
-  pulseStrength = 0.85,
+  pulseStrength = 1.15,
 ): FlowingRing {
-  const pts = wobblyRingPoints(radius, seed, segments);
-  const geom = new THREE.BufferGeometry().setFromPoints(pts);
-  const progress = new Float32Array(pts.length);
-  for (let i = 0; i < pts.length; i += 1) progress[i] = i / (pts.length - 1);
-  geom.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1));
-
   const material = new THREE.ShaderMaterial({
     uniforms: {
       uColor: { value: new THREE.Color(color) },
       uPulseColor: { value: new THREE.Color(pulseColor) },
       uBase: { value: baseOpacity },
       uPulse: { value: pulseStrength },
-      uWidth: { value: 0.11 },
+      uWidth: { value: 0.13 },
       uTime: { value: 0 },
       uSpeed: { value: speed },
     },
@@ -337,7 +331,20 @@ export function makeFlowingRing(
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   });
-  return { line: new THREE.Line(geom, material), material };
+
+  /* a double stroke — two parallel wobbly lines sharing one material —
+     reads as a thicker hand-drawn ring, and the brighter crest carries a
+     more obvious bloom halo as it travels */
+  const object = new THREE.Group();
+  for (const r of [radius, radius * 1.006]) {
+    const pts = wobblyRingPoints(r, seed, segments);
+    const geom = new THREE.BufferGeometry().setFromPoints(pts);
+    const progress = new Float32Array(pts.length);
+    for (let i = 0; i < pts.length; i += 1) progress[i] = i / (pts.length - 1);
+    geom.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1));
+    object.add(new THREE.Line(geom, material));
+  }
+  return { object, material };
 }
 
 /* ————————————————————— fresnel rim shells ————————————————————— */
@@ -440,12 +447,13 @@ const MEMBRANE_FRAGMENT = /* glsl */ `
        one side of the vast shell is gently luminous and the form falls
        into shadow across its own curve — a lit volume, not a vignette */
     float lam = max(dot(n, normalize(uLightDir)), 0.0);
-    float shade = 0.22 + 0.95 * pow(lam, 1.3);
+    float shade = 0.26 + 1.2 * pow(lam, 1.25);
     float f = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.5);
-    /* the rim runs slightly hotter on the lit side, so the boundary
-       catches a whisper of bloom where the light grazes it */
-    vec3 col = mix(uColorA, uColorB, f) * shade + uColorB * f * lam * 0.5;
-    gl_FragColor = vec4(col, f * uOpacity * (0.4 + 0.85 * lam));
+    /* the rim runs hotter on the lit side, so the shaded boundary glows —
+       the lit sweep of the shell crosses the bloom threshold and blooms
+       softly while the shadow side stays quiet */
+    vec3 col = mix(uColorA, uColorB, f) * shade + uColorB * f * lam * 0.95;
+    gl_FragColor = vec4(col, f * uOpacity * (0.45 + 1.0 * lam));
   }
 `;
 
@@ -471,10 +479,10 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
   ringPlane.rotation.x = Math.PI / 2 - 0.14;
   ringPlane.rotation.y = 0.06;
   /* each big ring carries a constant, very gentle traveling light */
-  const flowA = makeFlowingRing(radius, ATLAS3D.ivory, 0.26, 9001, 260, 0.028);
-  const flowB = makeFlowingRing(radius * 1.05, ATLAS3D.ivory, 0.13, 9002, 260, -0.021);
-  const ringA = flowA.line;
-  const ringB = flowB.line;
+  const flowA = makeFlowingRing(radius, ATLAS3D.ivory, 0.33, 9001, 260, 0.028);
+  const flowB = makeFlowingRing(radius * 1.05, ATLAS3D.ivory, 0.19, 9002, 260, -0.021);
+  const ringA = flowA.object;
+  const ringB = flowB.object;
   ringB.rotation.x = 0.05;
   ringPlane.add(ringA, ringB);
   group.add(ringPlane);
@@ -489,7 +497,7 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
       uColorB: { value: new THREE.Color('#e6d3a8') },
       /* fixed warm key light, in family with the nucleus/env warm glow */
       uLightDir: { value: new THREE.Vector3(0.5, 0.62, 0.35).normalize() },
-      uOpacity: { value: 0.034 },
+      uOpacity: { value: 0.042 },
     },
     vertexShader: MEMBRANE_VERTEX,
     fragmentShader: MEMBRANE_FRAGMENT,
@@ -534,10 +542,15 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
     dispose: () => {
       shellGeom.dispose();
       shellMat.dispose();
-      (ringA.geometry as THREE.BufferGeometry).dispose();
-      (ringA.material as THREE.Material).dispose();
-      (ringB.geometry as THREE.BufferGeometry).dispose();
-      (ringB.material as THREE.Material).dispose();
+      for (const ring of [ringA, ringB]) {
+        ring.traverse((child) => {
+          if (child instanceof THREE.Line) {
+            child.geometry.dispose();
+          }
+        });
+      }
+      flowA.material.dispose();
+      flowB.material.dispose();
     },
   };
 }

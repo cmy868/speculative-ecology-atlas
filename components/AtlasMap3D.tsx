@@ -662,13 +662,15 @@ export default function AtlasMap3D() {
   );
 
   const linkParticleWidth = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? 1.55 : 1.0),
+    (link: LinkObject) => (isLinkLit(link) ? 1.95 : 1.0),
     [isLinkLit],
   );
 
+  /* slower travelers — the current should drift, not race — with a
+     stronger glow (hotter colors + wider bodies catch more bloom) */
   const linkParticleSpeed = useCallback(
     (link: LinkObject) =>
-      (isLinkLit(link) ? 0.006 : 0.0016) + 0.0016 * linkHash(link),
+      (isLinkLit(link) ? 0.0034 : 0.0011) + 0.0009 * linkHash(link),
     [isLinkLit],
   );
 
