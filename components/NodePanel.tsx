@@ -74,7 +74,7 @@ export default function NodePanel({
       : related;
 
   return (
-    <aside className="node-panel" key={node.id} aria-label={node.title}>
+    <aside className="node-panel glass" key={node.id} aria-label={node.title}>
       <div className="panel-top">
         <span className={`type-badge type-${node.type}`}>
           {TYPE_LABEL[node.type]}

@@ -2,10 +2,13 @@
  * Three.js art utilities for the Living Atlas 3D map.
  *
  * Visual language (derived from the artist's own work):
- *  - Domy Reverie: deep-space black, warm gold/ivory particle constellations,
+ *  - Domy Reverie: pure-black space, warm gold/ivory particle constellations,
  *    slow celestial motion — never neon.
- *  - Dissertation framework diagram: hand-drawn organic rings on near-black,
- *    a single red-orange accent ring, ivory serif labels.
+ *  - Dissertation framework diagram: hand-drawn organic rings on black,
+ *    a single red-orange Duo-Intelligence ring with two small circles,
+ *    three territories inside one large organic double ring —
+ *    "a single field of co-creation".
+ *  - Nebula highlight family (violet–magenta–cyan) for lit connections.
  *
  * Everything here is pure Three.js object construction — no React, no state.
  * All functions are only ever called client-side (from effects / accessors).
@@ -18,8 +21,8 @@ import type { AtlasNode, NodeType } from '@/types';
 /* ————————————————————— palette ————————————————————— */
 
 export const ATLAS3D = {
-  /** deep space with a hint of indigo */
-  bg: '#07080f',
+  /** pure black space — no blue cast */
+  bg: '#030303',
   /** ivory — primary text */
   ivory: '#e8e2d4',
   /** label ivory, held just under the bloom threshold so text never glows */
@@ -30,13 +33,29 @@ export const ATLAS3D = {
   amber: '#e9c98e',
   /** dim ember for concept nodes at rest */
   ember: '#9b8a60',
-  /** the framework diagram's red-orange accent ring */
+  /** the framework diagram's red-orange Duo-Intelligence ring */
   accent: '#c9502e',
-  /** soft green whisper for lit links (the diagram's green arrows) */
-  green: '#8aa583',
-  /** faint indigo for a minority of stars */
-  indigo: '#8d97c9',
+  /** nebula highlight family — lit connections, selection */
+  nebulaViolet: '#b57bff',
+  nebulaMagenta: '#ff6ec7',
+  nebulaCyan: '#5ee6eb',
 } as const;
+
+/** Per-link highlight colors, indexed by a stable hash. */
+export const NEBULA_LINK_COLORS = [
+  '#b57bff',
+  '#d76ee0',
+  '#ff6ec7',
+  '#8fa5ff',
+  '#5ee6eb',
+] as const;
+
+export const NEBULA_PARTICLE_COLORS = [
+  '#d9b3ff',
+  '#ff9ed9',
+  '#9ef2f5',
+  '#c3b3ff',
+] as const;
 
 /* ————————————————————— shared assets ————————————————————— */
 
@@ -60,6 +79,97 @@ export function makeGlowTexture(size = 128): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
+}
+
+/* ————————————————————— environment / lighting ————————————————————— */
+
+const ENV_VERTEX = /* glsl */ `
+  varying vec3 vDir;
+  void main() {
+    vDir = position;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+/* A tiny synthetic "studio in space": near-black dome with one warm gold
+   glow, one violet nebula glow and a cold cyan pinprick, so glassy and
+   metallic materials pick up believable, art-directed reflections. */
+const ENV_FRAGMENT = /* glsl */ `
+  varying vec3 vDir;
+  void main() {
+    vec3 d = normalize(vDir);
+    float h = d.y * 0.5 + 0.5;
+    vec3 col = mix(vec3(0.006, 0.006, 0.007), vec3(0.018, 0.014, 0.026), h);
+
+    float warm = pow(max(dot(d, normalize(vec3(0.55, 0.55, -0.35))), 0.0), 14.0);
+    col += vec3(1.0, 0.72, 0.38) * warm * 1.6;
+
+    float violet = pow(max(dot(d, normalize(vec3(-0.65, -0.15, 0.45))), 0.0), 10.0);
+    col += vec3(0.5, 0.32, 0.85) * violet * 0.55;
+
+    float cyan = pow(max(dot(d, normalize(vec3(0.15, -0.75, -0.6))), 0.0), 40.0);
+    col += vec3(0.35, 0.85, 0.9) * cyan * 0.8;
+
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+
+/**
+ * A small PMREM environment map generated from a gradient scene —
+ * enough for subtle reflections on the glassy/metallic node bodies.
+ */
+export function makeEnvMap(renderer: THREE.WebGLRenderer): THREE.Texture {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const scene = new THREE.Scene();
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(60, 48, 24),
+    new THREE.ShaderMaterial({
+      vertexShader: ENV_VERTEX,
+      fragmentShader: ENV_FRAGMENT,
+      side: THREE.BackSide,
+    }),
+  );
+  scene.add(dome);
+  /* no pre-blur sigma: the dome is already a smooth gradient, and larger
+     sigmas make PMREM warn about exceeding its sample budget */
+  const tex = pmrem.fromScene(scene).texture;
+  dome.geometry.dispose();
+  (dome.material as THREE.Material).dispose();
+  pmrem.dispose();
+  return tex;
+}
+
+export interface AtlasLights {
+  /** the warm light living at the golden nucleus (breathes with it) */
+  nucleus: THREE.PointLight;
+  nucleusBaseIntensity: number;
+}
+
+/**
+ * Replace the library's default flat lighting with the atlas rig:
+ * a warm point light at the nucleus, a faint violet ambient, and two
+ * dim directional fills so spheres always have a shaped dark side.
+ */
+export function setupLights(scene: THREE.Scene): AtlasLights {
+  for (const child of [...scene.children]) {
+    if ((child as THREE.Light).isLight) scene.remove(child);
+  }
+
+  scene.add(new THREE.AmbientLight('#9c8fb5', 0.42));
+
+  const nucleus = new THREE.PointLight('#ffc37c', 90000, 0, 2);
+  nucleus.position.set(0, 0, 0);
+  scene.add(nucleus);
+
+  const fill = new THREE.DirectionalLight('#b3a2e8', 0.55);
+  fill.position.set(260, 480, 320);
+  scene.add(fill);
+
+  const back = new THREE.DirectionalLight('#67d8dd', 0.3);
+  back.position.set(-220, -300, -420);
+  scene.add(back);
+
+  return { nucleus, nucleusBaseIntensity: nucleus.intensity };
 }
 
 /* ————————————————————— organic rings ————————————————————— */
@@ -133,6 +243,184 @@ export function makeWobblyRing(
   return new THREE.Line(geom, mat);
 }
 
+/* ————————————————————— fresnel rim shells ————————————————————— */
+
+const RIM_VERTEX = /* glsl */ `
+  varying vec3 vNormal;
+  varying vec3 vView;
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vNormal = normalize(normalMatrix * normal);
+    vView = normalize(-mv.xyz);
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+
+const RIM_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  uniform float uPower;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  void main() {
+    float f = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), uPower);
+    gl_FragColor = vec4(uColor * f, f * uOpacity);
+  }
+`;
+
+interface RimShell {
+  mesh: THREE.Mesh;
+  material: THREE.ShaderMaterial;
+  setOpacity: (v: number) => void;
+}
+
+/** Additive fresnel rim: the atmosphere-edge glow around a sphere. */
+function makeRimShell(
+  radius: number,
+  color: string,
+  opacity: number,
+  power = 2.6,
+): RimShell {
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      uColor: { value: new THREE.Color(color) },
+      uOpacity: { value: opacity },
+      uPower: { value: power },
+    },
+    vertexShader: RIM_VERTEX,
+    fragmentShader: RIM_FRAGMENT,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.FrontSide,
+  });
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 24), material);
+  mesh.renderOrder = 2;
+  mesh.raycast = () => undefined;
+  return {
+    mesh,
+    material,
+    setOpacity: (v: number) => {
+      material.uniforms.uOpacity.value = v;
+    },
+  };
+}
+
+/* ————————————————————— the field of co-creation ————————————————————— */
+
+const MEMBRANE_VERTEX = /* glsl */ `
+  uniform float uTime;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  void main() {
+    float w =
+      sin(position.x * 0.012 + uTime * 0.32) +
+      sin(position.y * 0.017 + uTime * 0.26) +
+      sin(position.z * 0.010 + uTime * 0.21);
+    vec3 p = position + normal * w * 9.0;
+    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+    vNormal = normalize(normalMatrix * normal);
+    vView = normalize(-mv.xyz);
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+
+const MEMBRANE_FRAGMENT = /* glsl */ `
+  uniform vec3 uColorA;
+  uniform vec3 uColorB;
+  uniform float uOpacity;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  void main() {
+    float f = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.1);
+    gl_FragColor = vec4(mix(uColorA, uColorB, f), f * uOpacity);
+  }
+`;
+
+export interface FieldMembrane {
+  group: THREE.Group;
+  /** call each frame with elapsed seconds + delta */
+  update: (t: number, dt: number) => void;
+  dispose: () => void;
+}
+
+/**
+ * "A single field of co-creation" — the framework diagram's enclosing
+ * hand-drawn double ring, grown into space: two huge wobbly rings plus a
+ * faint breathing organic shell that contains the whole galaxy.
+ */
+export function makeFieldMembrane(radius = 520): FieldMembrane {
+  const group = new THREE.Group();
+
+  /* The double ring faces the visitor (XY plane), the way the diagram's
+     enclosing line wraps the whole drawing. A slight tilt keeps it from
+     feeling mechanical; the rings spin slowly within their own plane. */
+  const ringPlane = new THREE.Group();
+  ringPlane.rotation.x = Math.PI / 2 - 0.14;
+  ringPlane.rotation.y = 0.06;
+  const ringA = makeWobblyRing(radius, ATLAS3D.ivory, 0.3, 9001, 260);
+  const ringB = makeWobblyRing(radius * 1.05, ATLAS3D.ivory, 0.16, 9002, 260);
+  ringB.rotation.x = 0.05;
+  ringPlane.add(ringA, ringB);
+  group.add(ringPlane);
+
+  const shellGeom = new THREE.IcosahedronGeometry(radius * 1.08, 3);
+  const shellMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uColorA: { value: new THREE.Color('#d9d2c0') },
+      uColorB: { value: new THREE.Color('#8f7bc0') },
+      uOpacity: { value: 0.022 },
+    },
+    vertexShader: MEMBRANE_VERTEX,
+    fragmentShader: MEMBRANE_FRAGMENT,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+  });
+  const shell = new THREE.Mesh(shellGeom, shellMat);
+  shell.raycast = () => undefined;
+  group.add(shell);
+
+  /* the diagram's handwritten caption, drifting with the field */
+  const caption = new SpriteText('a single field of co-creation', 13, ATLAS3D.labelSoft);
+  caption.fontFace = 'Georgia, "Times New Roman", serif';
+  caption.fontWeight = 'italic';
+  caption.material.transparent = true;
+  caption.material.opacity = 0.55;
+  caption.material.depthWrite = false;
+  caption.renderOrder = 3;
+  caption.position.set(radius * 0.76, radius * 0.68, 0);
+  group.add(caption);
+
+  /* rings and shell don't participate in pointer picking */
+  ringA.raycast = () => undefined;
+  ringB.raycast = () => undefined;
+  caption.raycast = () => undefined;
+
+  return {
+    group,
+    update: (t: number, dt: number) => {
+      shellMat.uniforms.uTime.value = t;
+      /* the rings spin within their own plane; the shell breathes */
+      ringA.rotation.y -= dt * 0.006;
+      ringB.rotation.y += dt * 0.004;
+      ringPlane.rotation.x = Math.PI / 2 - 0.14 + 0.03 * Math.sin(t * 0.11);
+      const breath = 1 + 0.012 * Math.sin(t * 0.23);
+      shell.scale.setScalar(breath);
+    },
+    dispose: () => {
+      shellGeom.dispose();
+      shellMat.dispose();
+      (ringA.geometry as THREE.BufferGeometry).dispose();
+      (ringA.material as THREE.Material).dispose();
+      (ringB.geometry as THREE.BufferGeometry).dispose();
+      (ringB.material as THREE.Material).dispose();
+    },
+  };
+}
+
 /* ————————————————————— starfield ————————————————————— */
 
 const STAR_VERTEX = /* glsl */ `
@@ -172,8 +460,8 @@ export interface Starfield {
 
 /**
  * A GPU particle field: thousands of tiny drifting dust/star particles.
- * Warm ivory/gold with a faint indigo minority — the Domy Reverie sky.
- * Twinkle runs in the vertex shader off a single uTime uniform.
+ * Warm ivory/gold with a faint nebula-violet minority — the Domy Reverie
+ * sky. Twinkle runs in the vertex shader off a single uTime uniform.
  */
 export function makeStarfield(count: number): Starfield {
   const positions = new Float32Array(count * 3);
@@ -184,7 +472,8 @@ export function makeStarfield(count: number): Starfield {
 
   const ivory = new THREE.Color(0.91, 0.87, 0.76);
   const gold = new THREE.Color(0.85, 0.68, 0.4);
-  const indigo = new THREE.Color(0.5, 0.55, 0.78);
+  const violet = new THREE.Color(0.62, 0.5, 0.85);
+  const cyan = new THREE.Color(0.45, 0.78, 0.8);
   const tmp = new THREE.Color();
 
   for (let i = 0; i < count; i += 1) {
@@ -199,7 +488,7 @@ export function makeStarfield(count: number): Starfield {
     positions[i * 3 + 2] = r * sinPhi * Math.sin(theta);
 
     const roll = Math.random();
-    tmp.copy(roll < 0.68 ? ivory : roll < 0.9 ? gold : indigo);
+    tmp.copy(roll < 0.62 ? ivory : roll < 0.86 ? gold : roll < 0.95 ? violet : cyan);
     const intensity = 0.35 + Math.random() * 0.65;
     colors[i * 3] = tmp.r * intensity;
     colors[i * 3 + 1] = tmp.g * intensity;
@@ -242,8 +531,8 @@ export function makeStarfield(count: number): Starfield {
 
 /* ————————————————————— node artwork ————————————————————— */
 
-interface Fadeable {
-  material: THREE.Material & { opacity: number };
+export interface Fadeable {
+  set: (opacity: number) => void;
   base: number;
 }
 
@@ -258,7 +547,7 @@ export interface NodeArtHandle {
   glowBaseColor: THREE.Color;
   /** current focus multiplier (set by applyFocus, read by the frame driver) */
   focusMul: number;
-  core?: THREE.MeshBasicMaterial;
+  core?: THREE.MeshStandardMaterial;
   coreBaseColor?: THREE.Color;
   label?: SpriteText;
   /** rings that slowly rotate (obj + radians/second) */
@@ -296,7 +585,7 @@ function makeLabel(
      'italic' as the weight yields a valid italic CSS font shorthand. */
   if (italic) label.fontWeight = 'italic';
   /* slight dark backing keeps text legible against the particle field */
-  label.backgroundColor = 'rgba(7,8,15,0.32)';
+  label.backgroundColor = 'rgba(0,0,0,0.34)';
   label.padding = 1.2;
   label.borderRadius = 1.5;
   label.material.depthWrite = false;
@@ -344,14 +633,29 @@ function makeHitSphere(radius: number): THREE.Mesh {
   return mesh;
 }
 
+function fadeMaterial(
+  material: THREE.Material & { opacity: number },
+  base: number,
+): Fadeable {
+  return {
+    base,
+    set: (v: number) => {
+      material.opacity = v;
+    },
+  };
+}
+
 /**
- * Build the artwork for one node:
- *  - center: a slowly breathing golden nucleus inside three hand-drawn
- *    concentric rings (ivory / red-orange accent / faint ivory) —
- *    the framework diagram translated into space.
- *  - territory: a luminous ivory sphere with a faint organic halo ring.
- *  - project: a warm amber point of light.
- *  - concept: a small dim ember that brightens on hover.
+ * Build the artwork for one node. Everything is really lit: physical
+ * materials with environment reflection, fresnel rim atmospheres, and a
+ * restrained additive glow so bodies read as precious objects in space.
+ *
+ *  - center: a breathing molten-gold nucleus inside the framework's
+ *    hand-drawn rings; the red-orange Duo-Intelligence ring carries its
+ *    two small circles, straight from the diagram.
+ *  - territory: a glassy liquid orb (transmission + iridescence + clearcoat).
+ *  - project: a polished gold body with warm specular highlights.
+ *  - concept: a small dark iridescent pearl that brightens on hover.
  */
 export function makeNodeArt(
   node: AtlasNode,
@@ -363,7 +667,7 @@ export function makeNodeArt(
   const seed = hashString(node.id);
 
   let glowSprite: THREE.Sprite;
-  let core: THREE.MeshBasicMaterial | undefined;
+  let core: THREE.MeshStandardMaterial | undefined;
   let label: SpriteText | undefined;
   let breathe: THREE.Mesh | undefined;
   let glowBase: number;
@@ -375,101 +679,173 @@ export function makeNodeArt(
     ringSeed: number,
     speed: number,
     tiltX: number,
-  ) => {
+  ): THREE.Line => {
     const ring = makeWobblyRing(radius, color, opacity, ringSeed);
     ring.rotation.x = tiltX;
+    ring.raycast = () => undefined;
     group.add(ring);
     rings.push({ obj: ring, speed });
-    fadeables.push({
-      material: ring.material as THREE.LineBasicMaterial,
-      base: opacity,
-    });
+    fadeables.push(fadeMaterial(ring.material as THREE.LineBasicMaterial, opacity));
+    return ring;
+  };
+
+  const addRim = (radius: number, color: string, opacity: number, power?: number) => {
+    const rim = makeRimShell(radius, color, opacity, power);
+    group.add(rim.mesh);
+    fadeables.push({ base: opacity, set: rim.setOpacity });
+    return rim;
   };
 
   if (node.type === 'center') {
-    /* breathing golden nucleus */
-    core = new THREE.MeshBasicMaterial({
-      color: ATLAS3D.amber,
+    /* breathing molten-gold nucleus — the "systems of imagination" blob */
+    core = new THREE.MeshStandardMaterial({
+      color: '#ffd9a0',
+      emissive: '#ffb45e',
+      emissiveIntensity: 2.6,
+      roughness: 0.35,
+      metalness: 0.1,
       transparent: true,
       opacity: 1,
     });
-    breathe = new THREE.Mesh(new THREE.SphereGeometry(5.2, 32, 24), core);
+    breathe = new THREE.Mesh(new THREE.SphereGeometry(6.2, 48, 32), core);
     group.add(breathe);
 
-    glowBase = 0.95;
-    glowSprite = makeGlowSprite(glowTexture, ATLAS3D.gold, 48, glowBase);
+    addRim(7.8, '#ffcf8a', 0.55, 2.2);
+
+    glowBase = 0.66;
+    glowSprite = makeGlowSprite(glowTexture, ATLAS3D.gold, 44, glowBase);
     group.add(glowSprite);
 
-    /* the framework's concentric hand-drawn rings */
-    addRing(13, ATLAS3D.ivory, 0.42, seed + 1, 0.05, 0.16);
-    addRing(18.5, ATLAS3D.accent, 0.5, seed + 2, -0.034, -0.1);
-    addRing(24, ATLAS3D.ivory, 0.16, seed + 3, 0.021, 0.28);
+    /* the framework's concentric hand-drawn rings; the middle one is the
+       red-orange Duo-Intelligence ring with its two small circles */
+    addRing(14.5, ATLAS3D.ivory, 0.42, seed + 1, 0.05, 0.16);
+    const duo = addRing(20.5, ATLAS3D.accent, 0.8, seed + 2, -0.034, -0.1);
+    addRing(26.5, ATLAS3D.ivory, 0.16, seed + 3, 0.021, 0.28);
 
-    label = makeLabel(wrapTitle(node.title, 26), 4.0, ATLAS3D.label, false, -26);
+    /* two small circles riding the Duo-Intelligence ring (from the diagram) */
+    for (const angle of [0.5, 0.5 + Math.PI]) {
+      const orbMat = new THREE.MeshStandardMaterial({
+        color: '#e8703f',
+        emissive: '#c9502e',
+        emissiveIntensity: 1.6,
+        roughness: 0.4,
+        metalness: 0.15,
+        transparent: true,
+        opacity: 1,
+      });
+      const orb = new THREE.Mesh(new THREE.SphereGeometry(1.5, 20, 14), orbMat);
+      orb.position.set(Math.cos(angle) * 20.5, 0, Math.sin(angle) * 20.5);
+      orb.raycast = () => undefined;
+      duo.add(orb); // ride the ring's rotation
+      fadeables.push(fadeMaterial(orbMat, 1));
+    }
+
+    label = makeLabel(wrapTitle(node.title, 26), 4.0, ATLAS3D.label, false, -30);
     group.add(label);
-    fadeables.push({ material: label.material, base: 1 });
+    fadeables.push(fadeMaterial(label.material, 1));
 
     group.add(makeHitSphere(10));
   } else if (node.type === 'territory') {
-    core = new THREE.MeshBasicMaterial({
-      color: '#efe7d2',
+    /* glassy liquid orb: transmission + clearcoat + iridescence */
+    const physical = new THREE.MeshPhysicalMaterial({
+      color: '#e7ecec',
+      metalness: 0,
+      roughness: 0.06,
+      transmission: 0.85,
+      thickness: 7,
+      ior: 1.38,
+      clearcoat: 1,
+      clearcoatRoughness: 0.12,
+      iridescence: 0.7,
+      iridescenceIOR: 1.32,
+      attenuationColor: new THREE.Color('#e9c98e'),
+      attenuationDistance: 16,
+      envMapIntensity: 1.6,
+      emissive: '#3a2f1d',
+      emissiveIntensity: 1.0,
       transparent: true,
       opacity: 1,
     });
-    group.add(new THREE.Mesh(new THREE.SphereGeometry(3.4, 24, 18), core));
+    core = physical;
+    group.add(new THREE.Mesh(new THREE.SphereGeometry(6.8, 48, 32), physical));
 
-    glowBase = 0.8;
-    glowSprite = makeGlowSprite(glowTexture, ATLAS3D.gold, 27, glowBase);
+    addRim(8.5, '#f2e7c9', 0.72, 2.8);
+
+    glowBase = 0.62;
+    glowSprite = makeGlowSprite(glowTexture, ATLAS3D.gold, 36, glowBase);
     group.add(glowSprite);
 
     /* one faint organic halo, like a breath drawn around the sphere */
-    addRing(8.6, ATLAS3D.ivory, 0.28, seed + 1, seed % 2 ? 0.045 : -0.045, 0.2);
+    addRing(13.5, ATLAS3D.ivory, 0.3, seed + 1, seed % 2 ? 0.045 : -0.045, 0.2);
 
-    label = makeLabel(wrapTitle(node.title, 20), 3.4, ATLAS3D.label, false, -10.5);
+    label = makeLabel(wrapTitle(node.title, 20), 4.2, ATLAS3D.label, false, -15.5);
     group.add(label);
-    fadeables.push({ material: label.material, base: 0.95 });
+    fadeables.push(fadeMaterial(label.material, 0.95));
 
-    group.add(makeHitSphere(6));
+    group.add(makeHitSphere(9));
   } else if (node.type === 'project') {
-    core = new THREE.MeshBasicMaterial({
-      color: ATLAS3D.amber,
+    /* polished gold body — precious, warm, specular */
+    const physical = new THREE.MeshPhysicalMaterial({
+      color: '#d3a45c',
+      metalness: 0.85,
+      roughness: 0.22,
+      clearcoat: 1,
+      clearcoatRoughness: 0.18,
+      envMapIntensity: 1.4,
+      emissive: '#452e12',
+      emissiveIntensity: 0.9,
       transparent: true,
       opacity: 1,
     });
-    group.add(new THREE.Mesh(new THREE.SphereGeometry(1.8, 18, 14), core));
+    core = physical;
+    group.add(new THREE.Mesh(new THREE.SphereGeometry(3.1, 36, 24), physical));
 
-    glowBase = 0.85;
-    glowSprite = makeGlowSprite(glowTexture, ATLAS3D.amber, 15, glowBase);
-    group.add(glowSprite);
-
-    label = makeLabel(wrapTitle(node.title, 20), 2.6, ATLAS3D.label, false, -4.6);
-    group.add(label);
-    fadeables.push({ material: label.material, base: 0.85 });
-
-    group.add(makeHitSphere(4.4));
-  } else {
-    /* concept: a small dim ember */
-    core = new THREE.MeshBasicMaterial({
-      color: ATLAS3D.ember,
-      transparent: true,
-      opacity: 0.95,
-    });
-    group.add(new THREE.Mesh(new THREE.SphereGeometry(1.15, 14, 10), core));
+    addRim(3.9, '#ffd9a0', 0.45, 2.6);
 
     glowBase = 0.45;
-    glowSprite = makeGlowSprite(glowTexture, ATLAS3D.ember, 8.5, glowBase);
+    glowSprite = makeGlowSprite(glowTexture, ATLAS3D.amber, 16, glowBase);
+    group.add(glowSprite);
+
+    label = makeLabel(wrapTitle(node.title, 20), 2.8, ATLAS3D.label, false, -6.6);
+    group.add(label);
+    fadeables.push(fadeMaterial(label.material, 0.85));
+
+    group.add(makeHitSphere(6));
+  } else {
+    /* concept: a small dark iridescent pearl */
+    const physical = new THREE.MeshPhysicalMaterial({
+      color: '#8b81a3',
+      metalness: 0.15,
+      roughness: 0.32,
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.25,
+      iridescence: 0.55,
+      iridescenceIOR: 1.25,
+      envMapIntensity: 0.9,
+      emissive: '#1f1b2b',
+      emissiveIntensity: 0.8,
+      transparent: true,
+      opacity: 0.98,
+    });
+    core = physical;
+    group.add(new THREE.Mesh(new THREE.SphereGeometry(2.0, 28, 20), physical));
+
+    addRim(2.6, '#b9a8dd', 0.34, 2.6);
+
+    glowBase = 0.32;
+    glowSprite = makeGlowSprite(glowTexture, '#a698c4', 10, glowBase);
     group.add(glowSprite);
 
     /* italic ivory label, revealed on hover (see applyFocus in AtlasMap3D) */
-    label = makeLabel(wrapTitle(node.title, 20), 2.4, ATLAS3D.labelSoft, true, -3.6);
+    label = makeLabel(wrapTitle(node.title, 20), 2.6, ATLAS3D.labelSoft, true, -5.2);
     label.visible = false;
     group.add(label);
-    fadeables.push({ material: label.material, base: 0.9 });
+    fadeables.push(fadeMaterial(label.material, 0.9));
 
-    group.add(makeHitSphere(3.4));
+    group.add(makeHitSphere(4.6));
   }
 
-  if (core) fadeables.push({ material: core, base: core.opacity });
+  if (core) fadeables.push(fadeMaterial(core, core.opacity));
 
   const glow = glowSprite.material as THREE.SpriteMaterial;
   return {
@@ -489,9 +865,10 @@ export function makeNodeArt(
   };
 }
 
-/** The red-orange accent ring placed around whichever node is selected. */
+/** The nebula-violet ring placed around whichever node is selected. */
 export function makeSelectionRing(radius: number): THREE.Line {
-  const ring = makeWobblyRing(radius, ATLAS3D.accent, 0.65, 77);
+  const ring = makeWobblyRing(radius, ATLAS3D.nebulaViolet, 0.7, 77);
   ring.rotation.x = 0.14;
+  ring.raycast = () => undefined;
   return ring;
 }

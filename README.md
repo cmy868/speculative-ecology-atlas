@@ -5,8 +5,10 @@ The dissertation PDF is a fixed scholarly artifact; this site is the ecology
 that keeps growing — an explorable, force-directed atlas of projects,
 concepts, and the three territories of Memory, Life, and Embodiment.
 
-Built with Next.js (App Router), TypeScript, React, and react-force-graph-2d.
-Statically exported (`output: 'export'`), so it can be hosted anywhere.
+Built with Next.js (App Router), TypeScript, React, three.js, and
+react-force-graph-3d. Statically exported (`output: 'export'`), so it can be
+hosted anywhere. The interface is permanently dark: a pure-black 3D galaxy
+grown from the dissertation's framework diagram, with liquid-glass UI chrome.
 
 ## Run locally
 
@@ -94,14 +96,17 @@ No server, database, or API is required.
 
 ```
 app/page.tsx                  Home — title, intro, ambient field
-app/atlas/page.tsx            Atlas route (full-viewport map)
+app/atlas/page.tsx            Atlas route (full-viewport 3D map)
 app/dissertation/page.tsx     Abstract, chapters, committee, citation
-components/AtlasMap.tsx       Force-directed map, hover/selection logic
-components/ForceGraphCanvas.tsx  Client-only wrapper for react-force-graph-2d
-components/NodePanel.tsx      Side panel for the selected node
+components/AtlasMap3D.tsx     3D force map: layout, lighting, hover/selection
+components/atlas3d.ts         All custom Three.js art (nodes, membrane, stars)
+components/ForceGraphCanvas3D.tsx  Client-only wrapper for react-force-graph-3d
+components/NodePanel.tsx      Liquid-glass panel for the selected node
+components/GlassFilter.tsx    Shared SVG displacement filter (liquid glass)
 components/AmbientField.tsx   Drifting-particle canvas on the home page
-components/ThemeProvider.tsx  Ink (dark) / paper (light) mode
 data/nodes.ts                 ← all atlas content
 data/links.ts                 ← all atlas relations
 types.ts                      Shared AtlasNode / AtlasLink types
+
+Deep link: `/atlas?node=<id>` opens the atlas with that node selected.
 ```

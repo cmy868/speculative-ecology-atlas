@@ -15,11 +15,18 @@ import type { AtlasNode } from '@/types';
 import NodePanel from './NodePanel';
 import {
   ATLAS3D,
+  NEBULA_LINK_COLORS,
+  NEBULA_PARTICLE_COLORS,
   hashString,
+  makeEnvMap,
+  makeFieldMembrane,
   makeGlowTexture,
   makeNodeArt,
   makeSelectionRing,
   makeStarfield,
+  setupLights,
+  type AtlasLights,
+  type FieldMembrane,
   type NodeArtHandle,
   type Starfield,
 } from './atlas3d';
@@ -35,6 +42,9 @@ type GraphNode = AtlasNode & {
   x?: number;
   y?: number;
   z?: number;
+  vx?: number;
+  vy?: number;
+  vz?: number;
   fx?: number;
   fy?: number;
   fz?: number;
@@ -58,11 +68,55 @@ function linkHash(link: LinkObject): number {
 }
 
 const SELECTION_RING_RADIUS: Record<AtlasNode['type'], number> = {
-  center: 28.5, // outside the framework rings
-  territory: 6.6,
-  project: 4.2,
-  concept: 3.2,
+  center: 31, // outside the framework rings
+  territory: 10.8,
+  project: 6.2,
+  concept: 4.4,
 };
+
+/* ————————— the framework diagram, made spatial —————————
+   Center at the origin; the three territories pinned on an inner orbit,
+   120° apart, echoing the diagram (Memory up, Life lower-left,
+   Embodiment lower-right); projects settle in a middle shell near their
+   territory; concepts drift in an outer band. */
+
+const TERRITORY_ORBIT = 172;
+const PROJECT_SHELL = 300;
+const CONCEPT_BAND = 415;
+
+const TERRITORY_ANCHORS: Record<string, [number, number, number]> = {
+  memory: [0, TERRITORY_ORBIT, 10],
+  life: [-TERRITORY_ORBIT * 0.87, -TERRITORY_ORBIT * 0.5, -26],
+  embodiment: [TERRITORY_ORBIT * 0.87, -TERRITORY_ORBIT * 0.5, 26],
+};
+
+const RADIAL_SHELL: Partial<Record<AtlasNode['type'], number>> = {
+  project: PROJECT_SHELL,
+  concept: CONCEPT_BAND,
+};
+
+/** Custom d3 force: pull each free node toward its type's shell radius. */
+function makeShellForce(strength = 0.55) {
+  let nodes: GraphNode[] = [];
+  const force = (alpha: number) => {
+    for (const n of nodes) {
+      const r = RADIAL_SHELL[n.type];
+      if (!r) continue;
+      const x = n.x ?? 0;
+      const y = n.y ?? 0;
+      const z = n.z ?? 0;
+      const len = Math.hypot(x, y, z) || 1e-6;
+      const k = ((r - len) * strength * alpha) / len;
+      n.vx = (n.vx ?? 0) + x * k;
+      n.vy = (n.vy ?? 0) + y * k;
+      n.vz = (n.vz ?? 0) + z * k;
+    }
+  };
+  force.initialize = (ns: GraphNode[]) => {
+    nodes = ns;
+  };
+  return force;
+}
 
 export default function AtlasMap3D() {
   const graphRef = useRef<ForceGraphMethods | undefined>(undefined);
@@ -80,6 +134,9 @@ export default function AtlasMap3D() {
   const handlesRef = useRef<Map<string, NodeArtHandle>>(new Map());
   const glowTexRef = useRef<THREE.Texture | null>(null);
   const starfieldRef = useRef<Starfield | null>(null);
+  const membraneRef = useRef<FieldMembrane | null>(null);
+  const lightsRef = useRef<AtlasLights | null>(null);
+  const envMapRef = useRef<THREE.Texture | null>(null);
   const selectionRingRef = useRef<THREE.Line | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
   const flyingUntilRef = useRef<number>(0);
@@ -88,14 +145,25 @@ export default function AtlasMap3D() {
 
   /* The simulation mutates its data (positions, object refs), so it gets
      its own copies; the originals in /data stay pristine. The center node
-     is pinned at the origin so the framework rings anchor the galaxy. */
+     is pinned at the origin and the three territories are pinned on the
+     inner orbit — the framework diagram anchors the whole galaxy. */
   const graphData = useMemo(
     () => ({
-      nodes: atlasNodes.map((n) =>
-        n.type === 'center'
-          ? ({ ...n, fx: 0, fy: 0, fz: 0 } as GraphNode)
-          : ({ ...n } as GraphNode),
-      ),
+      nodes: atlasNodes.map((n) => {
+        if (n.type === 'center') {
+          return { ...n, fx: 0, fy: 0, fz: 0 } as GraphNode;
+        }
+        const anchor = TERRITORY_ANCHORS[n.id];
+        if (n.type === 'territory' && anchor) {
+          return {
+            ...n,
+            fx: anchor[0],
+            fy: anchor[1],
+            fz: anchor[2],
+          } as GraphNode;
+        }
+        return { ...n } as GraphNode;
+      }),
       links: atlasLinks.map((l) => ({ ...l })),
     }),
     [],
@@ -124,23 +192,24 @@ export default function AtlasMap3D() {
 
   /* —————————————————— focus / dimming ——————————————————
      Applied imperatively to the Three.js materials: everything outside the
-     hovered neighborhood fades to near-dark; concept labels are revealed
-     for the hovered neighborhood. */
+     hovered/selected neighborhood fades to near-dark; concept labels are
+     revealed for the active neighborhood. */
   const applyFocus = useCallback(() => {
     const hover = hoverRef.current;
     const sel = selectedRef.current;
+    const active = hover ?? sel;
     for (const [id, h] of handlesRef.current) {
       const focused =
-        !hover || id === hover || (neighbors.get(hover)?.has(id) ?? false);
-      const mul = focused ? 1 : 0.1;
+        !active || id === active || (neighbors.get(active)?.has(id) ?? false);
+      const mul = focused ? 1 : 0.06;
       const emphasized = id === hover || id === sel;
 
-      for (const f of h.fadeables) f.material.opacity = f.base * mul;
-      h.focusMul = mul * (emphasized ? 1.35 : 1);
+      for (const f of h.fadeables) f.set(f.base * mul);
+      h.focusMul = mul * (emphasized ? 1.4 : 1);
       h.glow.opacity = Math.min(1, h.glowBase * h.focusMul);
 
       if (h.type === 'concept' && h.label) {
-        h.label.visible = id === sel || (hover !== null && focused);
+        h.label.visible = id === sel || (active !== null && focused);
       }
     }
   }, [neighbors]);
@@ -163,7 +232,8 @@ export default function AtlasMap3D() {
 
   /* —————————————————— scene setup ——————————————————
      Runs once the (dynamically loaded) graph instance exists: forces,
-     fog, starfield, bloom, idle-drift driver, initial camera fit. */
+     lighting, environment reflection, fog, starfield, the field membrane,
+     bloom, idle-drift driver, initial camera fit. */
   useEffect(() => {
     let raf = 0;
     const setup = () => {
@@ -179,7 +249,8 @@ export default function AtlasMap3D() {
         '(prefers-reduced-motion: reduce)',
       ).matches;
 
-      /* forces: gentle spread, type-aware link distances (as in the 2D map) */
+      /* forces: gentle spread, type-aware link distances, plus the radial
+         shells that grow the framework diagram into a galaxy */
       const charge = fg.d3Force('charge') as
         | { strength: (s: number) => unknown; distanceMax?: (d: number) => unknown }
         | undefined;
@@ -192,16 +263,30 @@ export default function AtlasMap3D() {
       linkForce?.distance((l: LinkObject) => {
         const sourceType = nodeById.get(endpointId(l.source))?.type;
         const targetType = nodeById.get(endpointId(l.target))?.type;
-        if (sourceType === 'center' || targetType === 'center') return 120;
-        if (sourceType === 'territory' || targetType === 'territory') return 78;
-        return 58;
+        if (sourceType === 'center' || targetType === 'center') return 170;
+        if (sourceType === 'territory' || targetType === 'territory') return 130;
+        return 110;
       });
+
+      (fg.d3Force as (name: string, force?: unknown) => unknown)(
+        'shell',
+        makeShellForce(),
+      );
 
       const scene = fg.scene();
       scene.fog = new THREE.FogExp2(
         new THREE.Color(ATLAS3D.bg).getHex(),
-        0.001,
+        0.0004,
       );
+
+      /* real lighting: warm point light at the nucleus + shaped fills,
+         and a small PMREM environment for glass/metal reflections */
+      lightsRef.current = setupLights(scene);
+      const renderer = fg.renderer() as THREE.WebGLRenderer;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.28;
+      envMapRef.current = makeEnvMap(renderer);
+      scene.environment = envMapRef.current;
 
       /* GPU particle field — fewer stars on small screens */
       const starCount = window.innerWidth < 720 ? 1100 : 2600;
@@ -209,19 +294,24 @@ export default function AtlasMap3D() {
       starfieldRef.current = starfield;
       scene.add(starfield.points);
 
-      /* subtle bloom: the threshold is set high so only the hot additive
-         glow cores bloom, never the ivory labels */
+      /* "a single field of co-creation" — the enclosing organic membrane */
+      const membrane = makeFieldMembrane(520);
+      membraneRef.current = membrane;
+      scene.add(membrane.group);
+
+      /* subtle bloom: the threshold is set high so only the hot cores and
+         lit nebula threads bloom, never the ivory labels */
       const bloom = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
-        1.1, // strength
-        0.7, // radius
-        0.82, // threshold — labels (#ded7c4) sit below this luminance
+        1.25, // strength
+        0.65, // radius
+        0.72, // threshold — labels (#ded7c4) sit below this luminance
       );
       fg.postProcessingComposer().addPass(bloom);
 
       /* per-frame driver, hooked onto the (never-culled) starfield:
          twinkle time, slow star drift, ring rotation, nucleus breathing,
-         and the idle camera orbit */
+         membrane breathing, and the idle camera orbit */
       const up = new THREE.Vector3(0, 1, 0);
       const offset = new THREE.Vector3();
       const t0 = performance.now();
@@ -237,6 +327,7 @@ export default function AtlasMap3D() {
         if (!reduced) {
           starfield.material.uniforms.uTime.value = t;
           starfield.points.rotation.y += dt * 0.004; // imperceptibly slow drift
+          membraneRef.current?.update(t, dt);
         }
 
         for (const h of handlesRef.current.values()) {
@@ -244,11 +335,16 @@ export default function AtlasMap3D() {
           if (h.breathe) {
             const s = 1 + 0.055 * Math.sin(t * 0.55);
             h.breathe.scale.setScalar(s);
-            /* let the nucleus glow breathe with it (respecting focus dim) */
+            /* let the nucleus glow and its light breathe with it */
             h.glow.opacity = Math.min(
               1,
               h.glowBase * h.focusMul * (0.92 + 0.08 * Math.sin(t * 0.55)),
             );
+            const lights = lightsRef.current;
+            if (lights) {
+              lights.nucleus.intensity =
+                lights.nucleusBaseIntensity * (0.9 + 0.1 * Math.sin(t * 0.55));
+            }
           }
         }
         if (selectionRingRef.current) {
@@ -274,10 +370,12 @@ export default function AtlasMap3D() {
         }
       };
 
-      /* slow zoom-to-fit once the layout has warmed up */
+      /* settle into a face-on view so the framework diagram reads
+         (Memory up, Life lower-left, Embodiment lower-right), then fit */
       flyingUntilRef.current = Date.now() + 2600;
+      fg.cameraPosition({ x: 0, y: 70, z: 980 }, { x: 0, y: 0, z: 0 }, 0);
       window.setTimeout(() => {
-        graphRef.current?.zoomToFit(1600, 90);
+        graphRef.current?.zoomToFit(1600, 40);
       }, 700);
     };
     setup();
@@ -315,6 +413,8 @@ export default function AtlasMap3D() {
   useEffect(
     () => () => {
       starfieldRef.current?.dispose();
+      membraneRef.current?.dispose();
+      envMapRef.current?.dispose();
       glowTexRef.current?.dispose();
       handlesRef.current.clear();
     },
@@ -327,7 +427,7 @@ export default function AtlasMap3D() {
     const prevId = selectedRef.current;
     selectedRef.current = nextId;
 
-    /* restore the previous node's tint and remove the accent ring */
+    /* restore the previous node's tint and remove the selection ring */
     if (prevId) {
       const prev = handlesRef.current.get(prevId);
       if (prev) {
@@ -340,16 +440,16 @@ export default function AtlasMap3D() {
       selectionRingRef.current = null;
     }
 
-    /* tint the newly selected node toward the red-orange accent and give
-       it its own hand-drawn accent ring (the center already has one) */
+    /* tint the newly selected node toward the nebula violet and give it
+       its own hand-drawn ring */
     if (nextId) {
       const next = handlesRef.current.get(nextId);
       if (next) {
         if (next.type !== 'center') {
-          next.glow.color.set(ATLAS3D.accent).lerp(next.glowBaseColor, 0.35);
-          next.core?.color.set(ATLAS3D.accent).lerp(
+          next.glow.color.set(ATLAS3D.nebulaViolet).lerp(next.glowBaseColor, 0.3);
+          next.core?.color.set(ATLAS3D.nebulaViolet).lerp(
             next.coreBaseColor ?? next.glow.color,
-            0.25,
+            0.45,
           );
         }
         const ring = makeSelectionRing(SELECTION_RING_RADIUS[next.type]);
@@ -365,7 +465,8 @@ export default function AtlasMap3D() {
     const x = node.x ?? 0;
     const y = node.y ?? 0;
     const z = node.z ?? 0;
-    const distance = node.type === 'center' ? 150 : 85;
+    const distance =
+      node.type === 'center' ? 200 : node.type === 'territory' ? 135 : 95;
     const r = Math.hypot(x, y, z);
     let pos: { x: number; y: number; z: number };
     if (r < 4) {
@@ -403,6 +504,14 @@ export default function AtlasMap3D() {
     applyFocus();
   }, [applySelection, applyFocus]);
 
+  /* deep link: /atlas?node=<id> opens that node once the layout settles */
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('node');
+    if (!id || !nodeById.has(id)) return;
+    const timer = window.setTimeout(() => handleSelect(id), 2600);
+    return () => window.clearTimeout(timer);
+  }, [handleSelect]);
+
   const handleHover = useCallback(
     (nodeObj: NodeObject | null) => {
       const id = nodeObj ? String(nodeObj.id) : null;
@@ -415,37 +524,64 @@ export default function AtlasMap3D() {
   );
 
   /* —————————————————— links ——————————————————
-     Gently curved threads; hovering a node lights its links with the
-     framework diagram's soft green, and speeds their traveling embers. */
+     Gently curved threads; hovering or selecting a node lights its links
+     in the nebula family (violet–magenta–cyan), noticeably brighter and
+     thicker, with denser, faster traveling particles. Everything else
+     recedes into the dark. */
+
+  const activeId = hoverId ?? selectedId;
 
   const isLinkLit = useCallback(
     (link: LinkObject) => {
-      if (!hoverId) return false;
+      if (!activeId) return false;
       const s = endpointId(link.source);
       const t = endpointId(link.target);
-      return s === hoverId || t === hoverId;
+      return s === activeId || t === activeId;
     },
-    [hoverId],
+    [activeId],
   );
 
   const linkColor = useCallback(
-    (link: LinkObject) =>
-      isLinkLit(link) ? 'rgba(138,165,131,0.9)' : 'rgba(222,214,196,0.38)',
-    [isLinkLit],
+    (link: LinkObject) => {
+      if (isLinkLit(link)) {
+        return NEBULA_LINK_COLORS[
+          Math.floor(linkHash(link) * NEBULA_LINK_COLORS.length)
+        ];
+      }
+      /* while something is active, unrelated threads almost disappear */
+      return activeId ? 'rgba(222,214,196,0.05)' : 'rgba(222,214,196,0.45)';
+    },
+    [isLinkLit, activeId],
   );
 
   const linkWidth = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? 0.55 : 0.22),
+    (link: LinkObject) => (isLinkLit(link) ? 0.75 : 0.32),
+    [isLinkLit],
+  );
+
+  const linkParticles = useCallback(
+    (link: LinkObject) => (isLinkLit(link) ? 6 : 2),
     [isLinkLit],
   );
 
   const linkParticleColor = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? '#b9cfae' : '#d9b36c'),
+    (link: LinkObject) =>
+      isLinkLit(link)
+        ? NEBULA_PARTICLE_COLORS[
+            Math.floor(linkHash(link) * NEBULA_PARTICLE_COLORS.length)
+          ]
+        : '#d9b36c',
     [isLinkLit],
   );
 
   const linkParticleWidth = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? 1.7 : 1.1),
+    (link: LinkObject) => (isLinkLit(link) ? 1.7 : 1.0),
+    [isLinkLit],
+  );
+
+  const linkParticleSpeed = useCallback(
+    (link: LinkObject) =>
+      (isLinkLit(link) ? 0.006 : 0.0016) + 0.0016 * linkHash(link),
     [isLinkLit],
   );
 
@@ -474,22 +610,21 @@ export default function AtlasMap3D() {
           nodeThreeObjectExtend={false}
           linkColor={linkColor}
           linkWidth={linkWidth}
-          linkOpacity={0.5}
+          linkOpacity={0.55}
           linkCurvature={(l: LinkObject) => 0.1 + 0.14 * linkHash(l)}
           linkCurveRotation={(l: LinkObject) => linkHash(l) * Math.PI * 2}
-          linkDirectionalParticles={2}
+          linkDirectionalParticles={linkParticles}
           linkDirectionalParticleWidth={linkParticleWidth}
-          linkDirectionalParticleSpeed={(l: LinkObject) =>
-            0.0016 + 0.0016 * linkHash(l)
-          }
+          linkDirectionalParticleSpeed={linkParticleSpeed}
           linkDirectionalParticleColor={linkParticleColor}
           linkDirectionalParticleResolution={6}
           onNodeHover={handleHover}
           onNodeClick={(node: NodeObject) => handleSelect(String(node.id))}
           onNodeDragEnd={(node: NodeObject) => {
-            /* let dragged nodes drift again instead of staying pinned —
-               except the center, which anchors the composition */
-            if (String(node.id) !== 'speculative-ecology') {
+            /* let dragged projects/concepts drift again instead of staying
+               pinned; the center and the territories anchor the framework */
+            const type = nodeById.get(String(node.id))?.type;
+            if (type !== 'center' && type !== 'territory') {
               node.fx = undefined;
               node.fy = undefined;
               node.fz = undefined;
@@ -504,7 +639,7 @@ export default function AtlasMap3D() {
         />
       )}
 
-      <div className="atlas-legend" aria-hidden>
+      <div className="atlas-legend glass glass-chip" aria-hidden>
         <span>
           <i className="legend-dot type-center" /> framework
         </span>
@@ -519,7 +654,7 @@ export default function AtlasMap3D() {
         </span>
       </div>
 
-      <p className="atlas-hint">
+      <p className="atlas-hint glass glass-chip">
         click a node to read · drag to orbit · scroll to zoom
       </p>
 

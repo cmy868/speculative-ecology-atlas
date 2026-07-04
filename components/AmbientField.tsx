@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useTheme } from './ThemeProvider';
 
 interface Particle {
   x: number;
@@ -23,12 +22,6 @@ const LINK_DISTANCE = 120;
  */
 export default function AmbientField() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { theme } = useTheme();
-  const themeRef = useRef(theme);
-
-  useEffect(() => {
-    themeRef.current = theme;
-  }, [theme]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -66,11 +59,9 @@ export default function AmbientField() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
 
-      const dark = themeRef.current === 'dark';
-      /* dark: the atlas's sky — twinkling ivory dust with warm gold sparks;
-         light: the original calm ink dots */
-      const ivoryPrefix = dark ? 'rgba(232,226,212,' : 'rgba(42,38,30,';
-      const goldPrefix = dark ? 'rgba(233,201,142,' : 'rgba(42,38,30,';
+      /* the atlas's sky — twinkling ivory dust with warm gold sparks */
+      const ivoryPrefix = 'rgba(232,226,212,';
+      const goldPrefix = 'rgba(233,201,142,';
       const linePrefix = ivoryPrefix;
       const t = performance.now() / 1000;
 
@@ -105,10 +96,8 @@ export default function AmbientField() {
       }
 
       for (const p of particles) {
-        const twinkle = dark
-          ? 0.55 + 0.45 * Math.sin(t * p.speed + p.phase)
-          : 1;
-        const alpha = (p.warm && dark ? 0.42 : 0.32) * twinkle;
+        const twinkle = 0.55 + 0.45 * Math.sin(t * p.speed + p.phase);
+        const alpha = (p.warm ? 0.42 : 0.32) * twinkle;
         ctx.fillStyle = `${p.warm ? goldPrefix : ivoryPrefix}${alpha.toFixed(3)})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);

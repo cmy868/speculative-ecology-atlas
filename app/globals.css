@@ -1,44 +1,26 @@
 /* ————————————————————————————————————————————————
    Speculative Ecology — A Living Atlas
-   deep space, warm gold, ivory serif — after Domy Reverie
-   and the hand-drawn framework diagram
+   pure-black space, warm gold, ivory serif, liquid glass —
+   after Domy Reverie and the hand-drawn framework diagram
    ———————————————————————————————————————————————— */
 
-:root,
-[data-theme='dark'] {
-  --bg: #07080f;
-  --bg-raised: #0d0f1a;
-  --bg-overlay: rgba(10, 12, 20, 0.78);
-  --ink: #e8e2d4;
-  --ink-soft: #aca489;
-  --ink-faint: #7d775f;
-  --line: rgba(232, 226, 212, 0.14);
-  --line-strong: rgba(232, 226, 212, 0.36);
-  --accent: #c9502e;
-  --accent-soft: rgba(201, 80, 46, 0.18);
+:root {
+  --bg: #030303;
+  --ink: #ece6d8;
+  --ink-soft: #a9a18d;
+  --ink-faint: #6f695a;
+  --line: rgba(236, 230, 216, 0.12);
+  --line-strong: rgba(236, 230, 216, 0.3);
   --gold: #d9b36c;
+  --gold-bright: #ecc98b;
   --gold-soft: rgba(217, 179, 108, 0.2);
-  --dot-territory: #e8e2d4;
+  --nebula: #b57bff;
+  --nebula-2: #ff6ec7;
+  --nebula-soft: rgba(181, 123, 255, 0.2);
+  --cyan: #5ee6eb;
+  --dot-territory: #ece6d8;
   --dot-project: #d9b36c;
   color-scheme: dark;
-}
-
-[data-theme='light'] {
-  --bg: #faf7ef;
-  --bg-raised: #f2eee2;
-  --bg-overlay: rgba(250, 247, 239, 0.92);
-  --ink: #26221a;
-  --ink-soft: #6e6655;
-  --ink-faint: #9a9180;
-  --line: rgba(38, 34, 26, 0.15);
-  --line-strong: rgba(38, 34, 26, 0.38);
-  --accent: #b2452f;
-  --accent-soft: rgba(178, 69, 47, 0.1);
-  --gold: #a8823f;
-  --gold-soft: rgba(168, 130, 63, 0.16);
-  --dot-territory: #2a261e;
-  --dot-project: #8a6f3c;
-  color-scheme: light;
 }
 
 * {
@@ -55,10 +37,9 @@ body {
   background-color: var(--bg);
   color: var(--ink);
   font-family: var(--font-body), 'Segoe UI', system-ui, sans-serif;
-  font-size: 0.98rem;
+  font-size: 0.96rem;
   line-height: 1.75;
   letter-spacing: 0.01em;
-  transition: background-color 0.5s ease, color 0.5s ease;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -79,24 +60,85 @@ code {
 }
 
 ::selection {
-  background: var(--accent-soft);
+  background: rgba(181, 123, 255, 0.32);
+}
+
+/* thin, quiet scrollbars for the glass panels */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(236, 230, 216, 0.18) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(236, 230, 216, 0.18);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ———————————————————— liquid glass ————————————————————
+   Refractive frosted glass: SVG displacement refraction (see
+   components/GlassFilter.tsx, after shuding/liquid-glass) with a
+   blur+saturate fallback, specular border highlight, and a faint
+   internal gradient so each surface reads as a curved lens. */
+
+.glass-defs {
+  position: fixed;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.glass {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0.015) 38%,
+    rgba(140, 110, 220, 0.05) 78%,
+    rgba(255, 255, 255, 0.04)
+  );
+  /* fallback for engines that can't do backdrop-filter: url(...) */
+  backdrop-filter: blur(22px) saturate(1.6) brightness(1.06);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6) brightness(1.06);
+  /* refractive liquid glass (Chromium) — overrides the line above */
+  backdrop-filter: url(#liquid-glass) blur(5px) saturate(1.7) brightness(1.08)
+    contrast(1.04);
+  box-shadow:
+    inset 0.8px 0.8px 0.6px rgba(255, 250, 235, 0.32),
+    inset -0.8px -0.8px 0.6px rgba(170, 140, 255, 0.14),
+    0 14px 44px rgba(0, 0, 0, 0.6);
+}
+
+.glass-pill {
+  border-radius: 999px;
+}
+
+.glass-chip {
+  border-radius: 18px;
 }
 
 /* ———————————————————— header ———————————————————— */
 
 .site-header {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 20;
+  top: 1.1rem;
+  left: 1.2rem;
+  right: 1.2rem;
+  z-index: 40;
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap; /* tiny screens: nav drops below the brand pill */
+  align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
-  padding: 1.4rem 2rem 2.2rem;
-  background: linear-gradient(to bottom, var(--bg) 25%, transparent);
-  transition: background 0.5s ease;
+  gap: 0.6rem 1rem;
   pointer-events: none;
 }
 
@@ -105,69 +147,46 @@ code {
 }
 
 .brand {
-  font-size: 1.15rem;
+  font-size: 1.08rem;
+  line-height: 1;
   text-decoration: none;
   color: var(--ink);
-  transition: color 0.4s ease;
+  padding: 0.72rem 1.35rem;
+  transition: color 0.4s ease, border-color 0.4s ease;
 }
 
 .brand:hover {
-  color: var(--accent);
+  color: var(--gold-bright);
+  border-color: rgba(217, 179, 108, 0.4);
 }
 
 .brand-sub {
   font-style: italic;
   color: var(--ink-soft);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 1.6rem;
+  gap: 0.2rem;
+  padding: 0.32rem 0.4rem;
 }
 
 .site-nav a {
-  font-size: 0.74rem;
-  letter-spacing: 0.16em;
+  font-size: 0.66rem;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   text-decoration: none;
   color: var(--ink-soft);
-  transition: color 0.4s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  transition: color 0.35s ease, background-color 0.35s ease;
 }
 
 .site-nav a:hover {
-  color: var(--accent);
-}
-
-.theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.32rem 0.85rem;
-  font-family: inherit;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  cursor: pointer;
-  transition: color 0.4s ease, border-color 0.4s ease;
-}
-
-.theme-toggle:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.theme-toggle-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1px solid currentColor;
-  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 /* ———————————————————— home ———————————————————— */
@@ -195,40 +214,49 @@ code {
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding: 8rem 1.5rem 4rem;
-  max-width: 60rem;
+  padding: 9rem 1.5rem 4rem;
+  max-width: 62rem;
   margin: 0 auto;
 }
 
 .hero-kicker {
-  font-size: 0.72rem;
-  letter-spacing: 0.26em;
+  font-size: 0.64rem;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  margin: 0 0 1.6rem;
+  margin: 0 0 1.8rem;
   animation: rise 0.9s ease both;
 }
 
 .hero h1 {
-  font-size: clamp(2.5rem, 6.5vw, 4.4rem);
+  font-size: clamp(2.6rem, 7vw, 5rem);
   font-weight: 500;
-  line-height: 1.12;
+  line-height: 1.08;
   margin: 0;
   animation: rise 0.9s ease 0.12s both;
 }
 
 .hero-subtitle {
   font-style: italic;
-  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
-  color: var(--gold);
-  margin: 1.3rem 0 0;
+  font-size: clamp(1.15rem, 2.4vw, 1.55rem);
+  margin: 1.4rem 0 0;
+  background: linear-gradient(
+    92deg,
+    var(--gold-bright) 10%,
+    #e9b7a2 45%,
+    var(--nebula) 90%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   animation: rise 0.9s ease 0.24s both;
 }
 
 .hero-intro {
-  max-width: 38rem;
+  max-width: 37rem;
+  font-size: 0.92rem;
   color: var(--ink-soft);
-  margin: 2.2rem 0 0;
+  margin: 2.4rem 0 0;
   animation: rise 0.9s ease 0.36s both;
 }
 
@@ -237,7 +265,7 @@ code {
   flex-wrap: wrap;
   justify-content: center;
   gap: 1rem;
-  margin-top: 3rem;
+  margin-top: 3.2rem;
   animation: rise 0.9s ease 0.48s both;
 }
 
@@ -256,32 +284,53 @@ code {
 
 .button {
   display: inline-block;
-  padding: 0.85rem 1.7rem;
-  border: 1px solid var(--line-strong);
-  background: transparent;
+  padding: 0.95rem 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0.015) 45%,
+    rgba(140, 110, 220, 0.05)
+  );
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  box-shadow:
+    inset 0.8px 0.8px 0.6px rgba(255, 250, 235, 0.3),
+    inset -0.8px -0.8px 0.6px rgba(170, 140, 255, 0.12),
+    0 10px 30px rgba(0, 0, 0, 0.45);
   color: var(--ink);
   font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 0.74rem;
-  letter-spacing: 0.18em;
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
-  transition: color 0.4s ease, border-color 0.4s ease, background-color 0.4s ease;
+  transition: color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease,
+    background-color 0.4s ease;
 }
 
 .button:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: #fff;
+  border-color: rgba(181, 123, 255, 0.55);
+  box-shadow:
+    inset 0.8px 0.8px 0.6px rgba(255, 250, 235, 0.3),
+    inset -0.8px -0.8px 0.6px rgba(170, 140, 255, 0.12),
+    0 0 26px rgba(181, 123, 255, 0.28);
 }
 
 .button-primary {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--gold-bright);
+  border-color: rgba(217, 179, 108, 0.5);
 }
 
 .button-primary:hover {
-  background: var(--accent);
-  color: var(--bg);
+  color: #ffe9c4;
+  border-color: rgba(236, 201, 139, 0.75);
+  box-shadow:
+    inset 0.8px 0.8px 0.6px rgba(255, 250, 235, 0.3),
+    inset -0.8px -0.8px 0.6px rgba(170, 140, 255, 0.12),
+    0 0 30px rgba(217, 179, 108, 0.3);
 }
 
 /* ———————————————————— footer ———————————————————— */
@@ -305,8 +354,8 @@ code {
 .site-footer .footer-meta {
   font-family: var(--font-body), system-ui, sans-serif;
   font-style: normal;
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink-faint);
   margin-top: 0.8rem;
@@ -314,29 +363,12 @@ code {
 
 /* ———————————————————— atlas ———————————————————— */
 
-/* The 3D atlas is an artwork with a fixed deep-space palette, so the page
-   forces dark styling regardless of the visitor's chosen site theme. */
 .atlas-page {
   position: relative;
   height: 100svh;
   overflow: hidden;
-  --bg: #07080f;
-  --bg-raised: #0d0f1a;
-  --bg-overlay: rgba(10, 12, 20, 0.78);
-  --ink: #e8e2d4;
-  --ink-soft: #aca489;
-  --ink-faint: #7d775f;
-  --line: rgba(232, 226, 212, 0.14);
-  --line-strong: rgba(232, 226, 212, 0.36);
-  --accent: #c9502e;
-  --accent-soft: rgba(201, 80, 46, 0.18);
-  --gold: #d9b36c;
-  --gold-soft: rgba(217, 179, 108, 0.2);
-  --dot-territory: #e8e2d4;
-  --dot-project: #d9b36c;
   background: var(--bg);
   color: var(--ink);
-  color-scheme: dark;
 }
 
 .atlas-canvas {
@@ -362,16 +394,17 @@ code {
 
 .atlas-legend {
   position: fixed;
-  left: 2rem;
-  bottom: 3.6rem;
+  left: 1.4rem;
+  bottom: 1.4rem;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
+  gap: 0.34rem;
+  padding: 0.95rem 1.25rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   pointer-events: none;
 }
 
@@ -390,10 +423,12 @@ code {
 
 .legend-dot.type-center {
   background: var(--gold);
+  box-shadow: 0 0 6px rgba(217, 179, 108, 0.8);
 }
 
 .legend-dot.type-territory {
   background: var(--dot-territory);
+  box-shadow: 0 0 6px rgba(236, 230, 216, 0.5);
 }
 
 .legend-dot.type-project {
@@ -401,18 +436,20 @@ code {
 }
 
 .legend-dot.type-concept {
-  background: transparent;
-  border: 1px solid var(--ink-faint);
+  background: rgba(181, 123, 255, 0.25);
+  border: 1px solid rgba(181, 123, 255, 0.6);
 }
 
 .atlas-hint {
   position: fixed;
-  right: 2rem;
-  bottom: 3.6rem;
+  right: 1.4rem;
+  bottom: 1.4rem;
   z-index: 10;
   margin: 0;
-  font-size: 0.72rem;
-  color: var(--ink-faint);
+  padding: 0.8rem 1.2rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
   pointer-events: none;
   animation: hint-fade 1.2s ease 0.8s both;
 }
@@ -428,32 +465,42 @@ code {
 
 .atlas-footnote {
   position: fixed;
-  left: 2rem;
-  bottom: 1.1rem;
-  z-index: 10;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 9;
   margin: 0;
   font-family: var(--font-display), Georgia, serif;
   font-style: italic;
   font-size: 0.82rem;
   color: var(--ink-faint);
   pointer-events: none;
+  white-space: nowrap;
 }
 
 /* ———————————————————— node panel ———————————————————— */
 
 .node-panel {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  top: 5.6rem;
+  right: 1.2rem;
+  bottom: 1.2rem;
   z-index: 30;
-  width: min(430px, 100vw);
-  background: var(--bg-overlay);
-  border-left: 1px solid var(--gold-soft);
-  padding: 5.4rem 2.3rem 2.6rem;
+  width: min(424px, calc(100vw - 2.4rem));
+  border-radius: 26px;
+  /* deeper glass tint so text stays readable even without backdrop support */
+  background:
+    linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.012) 34%,
+      rgba(140, 110, 220, 0.05) 80%,
+      rgba(255, 255, 255, 0.03)
+    ),
+    rgba(5, 5, 8, 0.62);
+  padding: 1.9rem 2rem 2.2rem;
   overflow-y: auto;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  overscroll-behavior: contain;
   animation: panel-in 0.45s ease both;
 }
 
@@ -476,12 +523,13 @@ code {
 }
 
 .type-badge {
-  font-size: 0.68rem;
-  letter-spacing: 0.22em;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   border: 1px solid var(--line);
-  padding: 0.22rem 0.7rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.28rem 0.75rem;
   border-radius: 999px;
 }
 
@@ -491,33 +539,43 @@ code {
 }
 
 .type-badge.type-center {
-  color: var(--accent);
-  border-color: var(--accent-soft);
+  color: var(--gold-bright);
+  border-color: rgba(236, 201, 139, 0.4);
+}
+
+.type-badge.type-concept {
+  color: var(--nebula);
+  border-color: var(--nebula-soft);
 }
 
 .panel-close {
-  background: none;
-  border: none;
-  color: var(--ink-faint);
-  font-size: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  font-size: 1.15rem;
   line-height: 1;
   cursor: pointer;
-  padding: 0.2rem 0.4rem;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .panel-close:hover {
-  color: var(--accent);
+  color: var(--nebula);
+  border-color: rgba(181, 123, 255, 0.5);
 }
 
 .panel-title {
-  font-size: 1.85rem;
-  line-height: 1.18;
+  font-size: 2rem;
+  line-height: 1.14;
   margin: 0 0 0.5rem;
 }
 
 .panel-meta {
-  font-size: 0.78rem;
+  font-size: 0.66rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-soft);
@@ -531,9 +589,11 @@ code {
   display: block;
   margin: 0 0 1.4rem;
   border: 1px solid var(--line);
+  border-radius: 14px;
 }
 
 .panel-description {
+  font-size: 0.9rem;
   color: var(--ink);
   margin: 0 0 1.4rem;
 }
@@ -543,8 +603,8 @@ code {
 }
 
 .panel-external-link {
-  font-size: 0.74rem;
-  letter-spacing: 0.16em;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   text-decoration: none;
   color: var(--gold);
@@ -554,6 +614,7 @@ code {
 }
 
 .panel-external-link:hover {
+  color: var(--gold-bright);
   border-color: var(--gold);
 }
 
@@ -568,9 +629,10 @@ code {
 
 .tag-list li {
   border: 1px solid var(--line);
-  padding: 0.14rem 0.62rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.16rem 0.66rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.07em;
   color: var(--ink-soft);
   border-radius: 999px;
 }
@@ -584,8 +646,8 @@ code {
 
 .panel-citation h3,
 .panel-related h3 {
-  font-size: 0.7rem;
-  letter-spacing: 0.22em;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   font-weight: 500;
   color: var(--ink-faint);
@@ -593,7 +655,7 @@ code {
 }
 
 .panel-citation p {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-style: italic;
   color: var(--ink-soft);
   margin: 0;
@@ -612,7 +674,7 @@ code {
   border: none;
   padding: 0.28rem 0;
   font-family: var(--font-display), Georgia, serif;
-  font-size: 1.02rem;
+  font-size: 1.04rem;
   color: var(--ink);
   cursor: pointer;
   text-align: left;
@@ -620,7 +682,7 @@ code {
 }
 
 .panel-related button:hover {
-  color: var(--accent);
+  color: var(--nebula);
 }
 
 .relation-dot {
@@ -645,13 +707,13 @@ code {
 }
 
 .relation-dot.type-concept {
-  background: transparent;
-  border: 1px solid var(--ink-faint);
+  background: rgba(181, 123, 255, 0.25);
+  border: 1px solid rgba(181, 123, 255, 0.6);
 }
 
 .relation-note {
   margin: 0 0 0.45rem 1.05rem;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-style: italic;
   line-height: 1.45;
   color: var(--ink-faint);
@@ -670,7 +732,7 @@ code {
   width: 100%;
   max-width: 46rem;
   margin: 0 auto;
-  padding: 9rem 1.5rem 5rem;
+  padding: 9.5rem 1.5rem 5rem;
 }
 
 .dissertation-header h1 {
@@ -694,8 +756,8 @@ code {
 }
 
 .dissertation-section h2 {
-  font-size: 0.74rem;
-  letter-spacing: 0.26em;
+  font-size: 0.66rem;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
   font-weight: 500;
   color: var(--ink-faint);
@@ -734,10 +796,10 @@ code {
 .chapter-label {
   flex-shrink: 0;
   width: 6.4rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--gold);
 }
 
 .chapter-title {
@@ -767,8 +829,8 @@ code {
 .committee-role {
   flex-shrink: 0;
   width: 6.4rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-faint);
 }
@@ -781,28 +843,47 @@ code {
 .citation-block {
   margin: 0;
   padding: 1.4rem 1.6rem;
-  border-left: 2px solid var(--accent);
-  background: var(--bg-raised);
+  border-left: 2px solid var(--gold);
+  border-radius: 0 16px 16px 0;
+  background: rgba(255, 255, 255, 0.03);
   font-family: var(--font-display), Georgia, serif;
   font-size: 1.05rem;
   line-height: 1.7;
-  transition: background-color 0.5s ease;
 }
 
 /* ———————————————————— responsive ———————————————————— */
 
 @media (max-width: 720px) {
   .site-header {
-    padding: 1rem 1.2rem 1.8rem;
+    top: 0.8rem;
+    left: 0.8rem;
+    right: 0.8rem;
+  }
+
+  .brand {
+    padding: 0.6rem 1rem;
+    font-size: 0.98rem;
   }
 
   .brand-sub {
     display: none;
   }
 
+  .site-nav a {
+    padding: 0.42rem 0.65rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+  }
+
   .atlas-legend {
-    left: 1.2rem;
-    bottom: 4.4rem;
+    left: 0.9rem;
+    bottom: 0.9rem;
+    padding: 0.75rem 0.95rem;
+  }
+
+  /* the bottom-sheet panel would sit right on top of the legend */
+  .atlas-canvas:has(.node-panel) .atlas-legend {
+    opacity: 0;
   }
 
   .atlas-hint {
@@ -810,19 +891,17 @@ code {
   }
 
   .atlas-footnote {
-    left: 1.2rem;
-    right: 1.2rem;
-    font-size: 0.74rem;
+    display: none;
   }
 
   .node-panel {
     top: auto;
-    bottom: 0;
-    width: 100vw;
-    height: 64svh;
-    border-left: none;
-    border-top: 1px solid var(--line);
-    padding: 1.7rem 1.4rem 2rem;
+    right: 0.7rem;
+    left: 0.7rem;
+    bottom: 0.7rem;
+    width: auto;
+    height: 62svh;
+    padding: 1.6rem 1.4rem 2rem;
     animation-name: panel-up;
   }
 
@@ -835,6 +914,29 @@ code {
       opacity: 1;
       transform: none;
     }
+  }
+}
+
+@media (max-width: 460px) {
+  .site-header {
+    left: 0.6rem;
+    right: 0.6rem;
+    gap: 0.5rem;
+  }
+
+  .brand {
+    font-size: 0.88rem;
+    padding: 0.55rem 0.85rem;
+  }
+
+  .site-nav {
+    padding: 0.26rem 0.3rem;
+  }
+
+  .site-nav a {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.56rem;
+    letter-spacing: 0.08em;
   }
 }
 
