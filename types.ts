@@ -24,6 +24,8 @@ export interface AtlasNode {
   citation?: string;
   /** Path(s) under /public, e.g. "/media/fusion.jpg" (placeholder until the file is dropped in). */
   media?: string | string[];
+  /** External project page (e.g. on mingyongcheng.com) for full documentation. */
+  link?: string;
 }
 
 export interface AtlasLink {

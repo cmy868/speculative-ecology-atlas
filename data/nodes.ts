@@ -54,6 +54,7 @@ export const atlasNodes: AtlasNode[] = [
     chapter: 'Chapter 2 — Ecologies of Memory',
     tags: ['generative video', 'shan-shui', 'fine-tuning', 'cultural archives'],
     media: '/media/fusion-landscape-and-beyond.jpg',
+    link: 'https://www.mingyongcheng.com/projects/fusion-landscape-and-beyond',
   },
   {
     id: 'domy-reverie',
@@ -65,6 +66,7 @@ export const atlasNodes: AtlasNode[] = [
     chapter: 'Chapter 2 — Ecologies of Memory (coda)',
     tags: ['installation', 'satellite imagery', 'interactive floor', 'co-generation'],
     media: '/media/domy-reverie.jpg',
+    link: 'https://www.mingyongcheng.com/projects/domy-reverie',
   },
   {
     id: 'cycle-to-learn',
@@ -75,6 +77,7 @@ export const atlasNodes: AtlasNode[] = [
       'A breath-driven interactive installation linking AI training cycles to human respiration, so that the rhythm of learning machines is paced by living lungs — an exercise in giving computation an ecological tempo.',
     tags: ['interactive installation', 'breath interface', 'training cycles'],
     media: '/media/cycle-to-learn.jpg',
+    link: 'https://www.mingyongcheng.com/projects/cycle-to-learn',
   },
   {
     id: 'five-seasons',
@@ -86,6 +89,8 @@ export const atlasNodes: AtlasNode[] = [
     chapter: 'Chapter 2 — Ecologies of Memory',
     tags: ['image-to-video', 'painting archive', 'music collaboration', 'inheritance'],
     media: '/media/five-seasons.jpg',
+    /* Project page on mingyongcheng.com is password-protected, so link to the works index. */
+    link: 'https://www.mingyongcheng.com/works',
   },
   {
     id: 'six-seasons',
@@ -97,6 +102,7 @@ export const atlasNodes: AtlasNode[] = [
     chapter: 'Chapter 2 — Ecologies of Memory',
     tags: ['LoRA', 'Arctic imagery', 'audio-reactive', 'hydrophone recordings'],
     media: '/media/six-seasons.jpg',
+    link: 'https://www.mingyongcheng.com/projects/visual-interpretation-for-six-seasons',
   },
   {
     id: 'the-silhouette-seeker',
@@ -111,6 +117,7 @@ export const atlasNodes: AtlasNode[] = [
       '/media/the-silhouette-seeker.jpg',
       '/media/the-silhouette-seeker-grimoire.jpg',
     ],
+    link: 'https://www.mingyongcheng.com/projects/the-silhouette-seeker',
   },
   {
     id: 'speculative-fractal-intelligence',
@@ -121,6 +128,8 @@ export const atlasNodes: AtlasNode[] = [
       'An ongoing speculative exploration of fractal, more-than-human intelligence — asking what cognition looks like when it branches like coastlines and root systems rather than flowing through commands.',
     tags: ['speculative research', 'fractals', 'more-than-human cognition'],
     media: '/media/speculative-fractal-intelligence.jpg',
+    /* No individual project page on mingyongcheng.com yet, so link to the works index. */
+    link: 'https://www.mingyongcheng.com/works',
   },
   {
     id: 'peeling-cycle',
@@ -132,6 +141,8 @@ export const atlasNodes: AtlasNode[] = [
     chapter: 'Chapter 4 — Ecologies of Embodiment',
     tags: ['live performance', 'audiovisual', 'machine vision', 'gender'],
     media: '/media/peeling-cycle.jpg',
+    /* No individual project page on mingyongcheng.com yet, so link to the works index. */
+    link: 'https://www.mingyongcheng.com/works',
   },
   {
     id: 'learning-to-move-play-animate',
@@ -143,6 +154,7 @@ export const atlasNodes: AtlasNode[] = [
     chapter: 'Chapter 3 — Ecologies of Life',
     tags: ['performance', 'robotics', 'plant biofeedback', 'real-time visuals'],
     media: '/media/learning-to-move-play-animate.jpg',
+    link: 'https://www.mingyongcheng.com/projects/learning-to-move-learning-to-play-learning-to-animate',
   },
   {
     id: 'department-of-species-services',
@@ -154,6 +166,8 @@ export const atlasNodes: AtlasNode[] = [
     chapter: 'Chapter 3 — Ecologies of Life',
     tags: ['speculative institution', 'ecological labor', 'collaboration', 'installation'],
     media: '/media/department-of-species-services.jpg',
+    /* No individual project page on mingyongcheng.com yet, so link to the works index. */
+    link: 'https://www.mingyongcheng.com/works',
   },
   {
     id: 'beyond-characters',
@@ -165,6 +179,7 @@ export const atlasNodes: AtlasNode[] = [
     chapter: 'Chapter 4 — Ecologies of Embodiment',
     tags: ['gaze tracking', 'neurodiversity', 'dyslexia', 'interactive narrative'],
     media: '/media/beyond-characters.jpg',
+    link: 'https://www.mingyongcheng.com/projects/beyond-characters',
   },
   {
     id: 'a-cyborgs-mirror',
@@ -176,6 +191,7 @@ export const atlasNodes: AtlasNode[] = [
     chapter: 'Chapter 4 — Ecologies of Embodiment',
     tags: ['live performance', 'StreamDiffusion', 'cyborg feminism', 'audience prompts'],
     media: '/media/a-cyborgs-mirror.jpg',
+    link: 'https://www.mingyongcheng.com/projects/a-cyborgs-mirror-bodies-in-hyperreality',
   },
 
   /* ————————————————————— Concepts ————————————————————— */

@@ -105,6 +105,19 @@ export default function NodePanel({
 
       <p className="panel-description">{node.description}</p>
 
+      {node.type === 'project' && node.link && (
+        <p className="panel-external">
+          <a
+            className="panel-external-link"
+            href={node.link}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            More on mingyongcheng.com →
+          </a>
+        </p>
+      )}
+
       {node.tags && node.tags.length > 0 && (
         <ul className="tag-list">
           {node.tags.map((tag) => (
