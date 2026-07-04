@@ -1,7 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { atlasLinks } from '@/data/links';
 import type { AtlasNode, NodeType } from '@/types';
+
+/** Relation note between two nodes, if one was authored in data/links.ts. */
+function relationBetween(a: string, b: string): string | undefined {
+  return atlasLinks.find(
+    (l) =>
+      (l.source === a && l.target === b) || (l.source === b && l.target === a),
+  )?.relation;
+}
 
 const TYPE_LABEL: Record<NodeType, string> = {
   center: 'Framework',
@@ -137,14 +146,18 @@ export default function NodePanel({
         <div className="panel-related">
           <h3>{node.type === 'concept' ? 'Related projects' : 'Related nodes'}</h3>
           <ul>
-            {relatedList.map((r) => (
-              <li key={r.id}>
-                <button type="button" onClick={() => onSelect(r.id)}>
-                  <span className={`relation-dot type-${r.type}`} aria-hidden />
-                  {r.title}
-                </button>
-              </li>
-            ))}
+            {relatedList.map((r) => {
+              const relation = relationBetween(node.id, r.id);
+              return (
+                <li key={r.id}>
+                  <button type="button" onClick={() => onSelect(r.id)}>
+                    <span className={`relation-dot type-${r.type}`} aria-hidden />
+                    {r.title}
+                  </button>
+                  {relation && <p className="relation-note">{relation}</p>}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

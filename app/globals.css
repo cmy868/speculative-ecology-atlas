@@ -632,6 +632,14 @@ code {
   border: 1px solid var(--ink-faint);
 }
 
+.relation-note {
+  margin: 0 0 0.45rem 1.05rem;
+  font-size: 0.82rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--ink-faint);
+}
+
 /* ———————————————————— dissertation ———————————————————— */
 
 .page {

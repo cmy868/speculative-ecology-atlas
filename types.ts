@@ -33,4 +33,10 @@ export interface AtlasLink {
   source: string;
   /** Node id. */
   target: string;
+  /**
+   * Short explanation of the relation, shown in the node panel.
+   * Used mainly for project-to-project connections (shared apparatus,
+   * collaborators, or conceptual threads).
+   */
+  relation?: string;
 }

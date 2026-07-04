@@ -33,6 +33,7 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 const committee = [
   { role: 'Co-Chair', name: 'Dr. Memo Akten' },
   { role: 'Co-Chair', name: 'Dr. Pinar Yoldas' },
+  { role: 'Member', name: 'Dr. Benjamin Bratton' },
   { role: 'Member', name: 'Dr. Joshua Jones' },
   { role: 'Member', name: 'Dr. Lei Liang' },
   { role: 'Member', name: 'Dr. Robert Twomey' },
@@ -63,6 +64,37 @@ export default function DissertationPage() {
             Repository, a latent reservoir of cultural, visual, and sonic patterns
             worked by the human artist as an Agent of Emergence through an iterative
             loop of Duo-Intelligence.
+          </p>
+          <p className="abstract-text">
+            The framework advances through artworks in three dimensions. Ecologies of
+            Memory examines how generative systems transform cultural and
+            environmental memory: Fusion: Landscape and Beyond, Six Seasons, Five
+            Seasons, and Domy Reverie work with Chinese landscape painting, Arctic
+            satellite data, and time-lapse archives to propose AI Memory as
+            generative inheritance. Ecologies of Life asks how artistic systems can
+            imagine alternative forms of life and intelligence: Learning to Move,
+            Learning to Play, Learning to Animate stages intelligence as a relation
+            among dancers, plants, robots, and generative visuals; The Department of
+            Species Services, a speculative institution, reassigns human labor to
+            ecological care; and in The Silhouette Seeker, participants conjure new
+            forms of life from hand shadows into a collectively remembered
+            story-world. Ecologies of Embodiment investigates how generative systems
+            reshape perception, identity, and embodied experience through Beyond
+            Characters, A Cyborg&rsquo;s Mirror / Bodies in Hyperreality, and Peeling
+            Cycle, engaging neurodiversity, cyborg feminism, and algorithmic
+            identity.
+          </p>
+          <p className="abstract-text">
+            The artworks function not as illustrations of theory but as epistemic
+            instruments: each stages a relation theory can describe but not enact.
+            Generative AI requires this framework now because such systems no longer
+            stand outside culture and environment; trained on their traces and
+            increasingly able to act within them, they participate in the relations
+            they represent. The dissertation contributes Speculative Ecology as a
+            framework for understanding generative AI; AI Memory as cultural and
+            environmental inheritance; artistic worldbuilding as a method for
+            more-than-human futures; and embodied artistic practice as a method for
+            investigating human&ndash;AI relations.
           </p>
         </section>
 

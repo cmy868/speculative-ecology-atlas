@@ -28,18 +28,18 @@ export const atlasLinks: AtlasLink[] = [
   { source: 'cycle-to-learn', target: 'ecological-time' },
   { source: 'cycle-to-learn', target: 'human-ai-co-creation' },
 
-  /* Five Seasons */
-  { source: 'five-seasons', target: 'life' },
+  /* Five Seasons — a memory work (Chapter 2) */
+  { source: 'five-seasons', target: 'memory' },
   { source: 'five-seasons', target: 'ecological-time' },
   { source: 'five-seasons', target: 'chinese-landscape-aesthetics' },
 
-  /* Six Seasons */
-  { source: 'six-seasons', target: 'life' },
+  /* Six Seasons — a memory work (Chapter 2) */
+  { source: 'six-seasons', target: 'memory' },
   { source: 'six-seasons', target: 'environmental-sensing' },
   { source: 'six-seasons', target: 'speculative-worldbuilding' },
 
-  /* The Silhouette Seeker */
-  { source: 'the-silhouette-seeker', target: 'embodiment' },
+  /* The Silhouette Seeker — a life work (Chapter 3) */
+  { source: 'the-silhouette-seeker', target: 'life' },
   { source: 'the-silhouette-seeker', target: 'collective-memory' },
   { source: 'the-silhouette-seeker', target: 'speculative-worldbuilding' },
   { source: 'the-silhouette-seeker', target: 'embodied-interaction' },
@@ -49,9 +49,9 @@ export const atlasLinks: AtlasLink[] = [
   { source: 'speculative-fractal-intelligence', target: 'more-than-human' },
   { source: 'speculative-fractal-intelligence', target: 'machine-imagination' },
 
-  /* Peeling Cycle */
-  { source: 'peeling-cycle', target: 'memory' },
+  /* Peeling Cycle — an embodiment work (Chapter 4) */
   { source: 'peeling-cycle', target: 'embodiment' },
+  { source: 'peeling-cycle', target: 'embodied-interaction' },
   { source: 'peeling-cycle', target: 'human-ai-co-creation' },
 
   /* Learning to Move, Learning to Play, Learning to Animate */
@@ -75,4 +75,100 @@ export const atlasLinks: AtlasLink[] = [
   { source: 'a-cyborgs-mirror', target: 'embodied-interaction' },
   { source: 'a-cyborgs-mirror', target: 'human-ai-co-creation' },
   { source: 'a-cyborgs-mirror', target: 'machine-imagination' },
+
+  /* ————— Hidden connections: project ↔ project threads ————— */
+
+  /* shared apparatus */
+  {
+    source: 'fusion-landscape-and-beyond',
+    target: 'six-seasons',
+    relation:
+      'The same fine-tuned shan-shui apparatus, turned from cultural memory toward environmental memory.',
+  },
+  {
+    source: 'six-seasons',
+    target: 'domy-reverie',
+    relation:
+      'The satellite record as trainable memory: both fine-tune models (LoRA) on orbital imagery of a changing Earth.',
+  },
+  {
+    source: 'six-seasons',
+    target: 'a-cyborgs-mirror',
+    relation:
+      'A shared real-time pipeline: StreamDiffusion in TouchDesigner drives the Coda of one and the mirrors of the other.',
+  },
+  {
+    source: 'learning-to-move-play-animate',
+    target: 'a-cyborgs-mirror',
+    relation:
+      'Real-time diffusion on stage: in both, a performer moves inside the generative loop rather than in front of it.',
+  },
+
+  /* inheritance threads */
+  {
+    source: 'fusion-landscape-and-beyond',
+    target: 'five-seasons',
+    relation:
+      'Two ways a painting tradition continues: a model that learned its grammar, and a living painter’s archive set in motion.',
+  },
+  {
+    source: 'six-seasons',
+    target: 'five-seasons',
+    relation:
+      'Bound by Lei Liang’s music: two compositions, one ecological way of listening.',
+  },
+  {
+    source: 'fusion-landscape-and-beyond',
+    target: 'beyond-characters',
+    relation:
+      'Chinese cultural sources as living material: shan-shui painting in one, fairy tales in the other.',
+  },
+
+  /* worldbuilding threads */
+  {
+    source: 'domy-reverie',
+    target: 'the-silhouette-seeker',
+    relation:
+      'Co-imagination at the threshold where memory becomes worldbuilding: audiences co-generate a world others inherit.',
+  },
+  {
+    source: 'the-silhouette-seeker',
+    target: 'department-of-species-services',
+    relation:
+      'Worldbuilding as method: a public story-world and a speculative institution, each built to be inhabited.',
+  },
+
+  /* embodiment threads */
+  {
+    source: 'beyond-characters',
+    target: 'the-silhouette-seeker',
+    relation:
+      'Gaze and gesture as ritual interfaces: the body, not the cursor, is what the system reads.',
+  },
+  {
+    source: 'a-cyborgs-mirror',
+    target: 'peeling-cycle',
+    relation:
+      'Visibility and its refusal: bodies under live machine interpretation, from negotiated identity to embodied refusal.',
+  },
+
+  /* collaborator and rhythm threads */
+  {
+    source: 'fusion-landscape-and-beyond',
+    target: 'domy-reverie',
+    relation:
+      'A fine-tuning lineage carried forward with collaborator Zetao Yu, from painting tradition to planetary record.',
+  },
+  {
+    source: 'learning-to-move-play-animate',
+    target: 'department-of-species-services',
+    relation:
+      'Ecological labor and distributed agency, with collaborator Han Zhang in both teams.',
+  },
+  {
+    source: 'cycle-to-learn',
+    target: 'learning-to-move-play-animate',
+    relation:
+      'Learning paced by living rhythms: breath in one, growth and nutation in the other.',
+  },
 ];

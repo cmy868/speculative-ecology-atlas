@@ -201,7 +201,8 @@ export const atlasNodes: AtlasNode[] = [
     title: 'Generative AI',
     description:
       'Machine learning systems that synthesize new images, sounds, and texts from learned distributions. Within speculative ecology they are approached not as tools but as Emergent Repositories — latent reservoirs of cultural pattern that the artist works as an Agent of Emergence.',
-    citation: 'See Cheng (2026), Introduction & Chapter 1. [Citation placeholder]',
+    citation:
+      'Rombach et al. (2022), “High-Resolution Image Synthesis with Latent Diffusion Models”; Boden & Edmonds (2019), From Fingers to Digits; McNamara (2023) on co-creativism.',
   },
   {
     id: 'more-than-human',
@@ -209,7 +210,8 @@ export const atlasNodes: AtlasNode[] = [
     title: 'More-than-Human',
     description:
       'A commitment, drawn from posthumanist and ecological thought, to decentering the human subject and attending to the agencies of animals, plants, machines, and environments as participants in shared worlds.',
-    citation: 'See Cheng (2026), Chapter 3. [Citation placeholder]',
+    citation:
+      'Abram (1996), The Spell of the Sensuous; Haraway (2016), Staying with the Trouble; Tsing (2015), The Mushroom at the End of the World; Bennett (2010), Vibrant Matter; Bridle (2022), Ways of Being.',
   },
   {
     id: 'chinese-landscape-aesthetics',
@@ -217,7 +219,8 @@ export const atlasNodes: AtlasNode[] = [
     title: 'Chinese Landscape Aesthetics',
     description:
       'The shan-shui tradition of landscape painting, in which mountains and water figure cosmological relation rather than optical resemblance. Here it serves as both training corpus and critical lens for machine-made landscapes.',
-    citation: 'See Cheng (2026), Chapter 2. [Citation placeholder]',
+    citation:
+      'Barnhart et al. (1997), Three Thousand Years of Chinese Painting; Liang (2025), 走向新山水 (Toward a New Shanshui).',
   },
   {
     id: 'environmental-sensing',
@@ -225,7 +228,7 @@ export const atlasNodes: AtlasNode[] = [
     title: 'Environmental Sensing',
     description:
       'Practices of listening to and measuring environments — hydrophones, satellites, biosensors — that translate planetary processes into data, and data back into perceptible form.',
-    citation: 'See Cheng (2026), Chapter 3. [Citation placeholder]',
+    citation: 'Gabrys (2016), Program Earth; Morton (2013), Hyperobjects.',
   },
   {
     id: 'collective-memory',
@@ -233,7 +236,8 @@ export const atlasNodes: AtlasNode[] = [
     title: 'Collective Memory',
     description:
       'Memory understood as socially and materially distributed across archives, images, and bodies rather than held by individuals. Generative models inherit and redistribute this memory in biased, reconstructive ways.',
-    citation: 'See Cheng (2026), Chapter 2. [Citation placeholder]',
+    citation:
+      'Halbwachs (1992), On Collective Memory; Jan Assmann (2011) and Aleida Assmann (2011) on stored and functional cultural memory; Nora (1989), “Between Memory and History”; Derrida (1996), Archive Fever; Ernst (2013), Digital Memory and the Archive.',
   },
   {
     id: 'embodied-interaction',
@@ -241,7 +245,8 @@ export const atlasNodes: AtlasNode[] = [
     title: 'Embodied Interaction',
     description:
       'Interaction designed around the moving, breathing, gesturing body rather than the screen and cursor, situating computation within bodily and spatial experience.',
-    citation: 'See Cheng (2026), Chapter 4. [Citation placeholder]',
+    citation:
+      'Merleau-Ponty (1962), Phenomenology of Perception; Hansen (2006), Bodies in Code; Hayles (1999), How We Became Posthuman.',
   },
   {
     id: 'speculative-worldbuilding',
@@ -249,7 +254,8 @@ export const atlasNodes: AtlasNode[] = [
     title: 'Speculative Worldbuilding',
     description:
       'The construction of coherent possible worlds as a mode of inquiry: fiction and simulation used to rehearse ecological relations that do not yet exist, so that they may be felt before they are argued.',
-    citation: 'See Cheng (2026), Chapters 1 & 3. [Citation placeholder]',
+    citation:
+      'Dunne & Raby (2013), Speculative Everything; Haraway (2016), Staying with the Trouble; Georgiev et al. (2023) on eco-speculative thought.',
   },
   {
     id: 'human-ai-co-creation',
@@ -257,7 +263,8 @@ export const atlasNodes: AtlasNode[] = [
     title: 'Human-AI Co-Creation',
     description:
       'An iterative loop of Duo-Intelligence in which artistic intention and machinic generation continually reshape one another, producing work attributable to neither alone.',
-    citation: 'See Cheng (2026), Introduction & Conclusion. [Citation placeholder]',
+    citation:
+      'McNamara (2023) on co-creativism; Boden & Edmonds (2019), From Fingers to Digits; Akten (2021), Deep Visual Instruments.',
   },
   {
     id: 'ecological-time',
@@ -265,7 +272,8 @@ export const atlasNodes: AtlasNode[] = [
     title: 'Ecological Time',
     description:
       'The layered temporalities of seasons, growth, decay, and training cycles — a counterpoint to computational instantaneity that asks how machines might dwell in slower rhythms.',
-    citation: 'See Cheng (2026), Chapter 3. [Citation placeholder]',
+    citation:
+      'Morton (2013), Hyperobjects; Tsing (2015), The Mushroom at the End of the World.',
   },
   {
     id: 'machine-imagination',
@@ -273,7 +281,8 @@ export const atlasNodes: AtlasNode[] = [
     title: 'Machine Imagination',
     description:
       'The capacity of generative systems to synthesize what does not yet exist, treated here not as human imagination’s rival but as a new participant in ecological relation.',
-    citation: 'See Cheng (2026), Chapter 1. [Citation placeholder]',
+    citation:
+      'Bratton (2021), “Planetary Sapience” (Noema); Akten (2021), “Distributed Consciousness”.',
   },
 ];
 
