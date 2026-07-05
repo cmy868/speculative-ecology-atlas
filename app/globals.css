@@ -98,24 +98,59 @@ code {
 .glass {
   position: relative;
   isolation: isolate;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.07),
-    rgba(255, 255, 255, 0.015) 38%,
-    rgba(140, 110, 220, 0.05) 78%,
-    rgba(255, 255, 255, 0.04)
+    rgba(255, 255, 255, 0.09),
+    rgba(255, 255, 255, 0.02) 38%,
+    rgba(140, 110, 220, 0.06) 78%,
+    rgba(255, 255, 255, 0.05)
   );
   /* fallback for engines that can't do backdrop-filter: url(...) */
-  backdrop-filter: blur(22px) saturate(1.6) brightness(1.06);
-  -webkit-backdrop-filter: blur(22px) saturate(1.6) brightness(1.06);
-  /* refractive liquid glass (Chromium) — overrides the line above */
-  backdrop-filter: url(#liquid-glass) blur(5px) saturate(1.7) brightness(1.08)
-    contrast(1.04);
+  backdrop-filter: blur(20px) saturate(1.7) brightness(1.08);
+  -webkit-backdrop-filter: blur(20px) saturate(1.7) brightness(1.08);
+  /* refractive liquid glass (Chromium) — a touch more displacement + a
+     lighter blur so what's behind actually bends through the lens */
+  backdrop-filter: url(#liquid-glass) blur(4px) saturate(1.8) brightness(1.1)
+    contrast(1.05);
   box-shadow:
-    inset 0.8px 0.8px 0.6px rgba(255, 250, 235, 0.32),
-    inset -0.8px -0.8px 0.6px rgba(170, 140, 255, 0.14),
-    0 14px 44px rgba(0, 0, 0, 0.6);
+    /* crisp "wet" specular along the top-left edge — the strongest liquid-
+       glass tell, visible even over dark, empty space */
+    inset 1.1px 1.1px 0.5px rgba(255, 252, 242, 0.5),
+    /* a soft sheen spilling down from the top edge */
+    inset 0 1.5px 10px rgba(255, 250, 240, 0.09),
+    inset -1.1px -1.1px 0.6px rgba(175, 145, 255, 0.2),
+    0 14px 44px rgba(0, 0, 0, 0.55);
+}
+
+/* a faint moving specular sheen sweeping the glass, so the surface reads as
+   liquid even where there is nothing bright behind it to refract */
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 252, 245, 0.06) 46%,
+    rgba(255, 252, 245, 0.11) 50%,
+    rgba(255, 252, 245, 0.05) 54%,
+    transparent 70%
+  );
+  background-size: 260% 260%;
+  animation: glass-sheen 9s ease-in-out infinite;
+}
+
+@keyframes glass-sheen {
+  0%,
+  100% {
+    background-position: 120% 0%;
+  }
+  50% {
+    background-position: -20% 100%;
+  }
 }
 
 .glass-pill {
@@ -406,16 +441,20 @@ code {
   border-radius: 22px;
   display: flex;
   flex-direction: column;
-  /* same deeper tint as the node panel, so entries stay readable */
+  overflow: hidden;
+  /* a lighter tint than the node panel: the index floats over dark, empty
+     space, so a thinner backing lets the flowing nebula bend through the
+     lens and the liquid glass actually reads (entries stay legible over the
+     deep background) */
   background:
     linear-gradient(
       160deg,
-      rgba(255, 255, 255, 0.06),
-      rgba(255, 255, 255, 0.012) 34%,
-      rgba(140, 110, 220, 0.05) 80%,
-      rgba(255, 255, 255, 0.03)
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.015) 34%,
+      rgba(140, 110, 220, 0.06) 80%,
+      rgba(255, 255, 255, 0.04)
     ),
-    rgba(5, 5, 8, 0.62);
+    rgba(6, 6, 11, 0.46);
   animation: index-in 0.45s ease both;
 }
 

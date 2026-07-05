@@ -207,9 +207,9 @@ export const atlasNodes: AtlasNode[] = [
   {
     id: 'chinese-landscape-aesthetics',
     type: 'concept',
-    title: 'Chinese Landscape Aesthetics',
+    title: 'Shan-shui (山水)',
     description:
-      'The shan-shui tradition of landscape painting, in which mountains and water figure cosmological relation rather than optical resemblance. Here it serves as both training corpus and critical lens for machine-made landscapes.',
+      'Shan-shui — literally “mountain-water” — is not landscape painting in the Western sense but a cosmological tradition in which the human dwells within nature rather than observing it from outside; mountains and water figure relation, not optical resemblance. Here it is both training corpus and critical lens for machine-made landscapes.',
     citation:
       'Barnhart et al. (1997), Three Thousand Years of Chinese Painting; Liang (2025), 走向新山水 (Toward a New Shanshui).',
   },

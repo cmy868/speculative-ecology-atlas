@@ -511,7 +511,7 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
   group.add(shell);
 
   /* the diagram's handwritten caption, drifting with the field */
-  const caption = new SpriteText('a single field of co-creation', 13, ATLAS3D.labelSoft);
+  const caption = new SpriteText('a shared field of co-creation', 13, ATLAS3D.labelSoft);
   caption.fontFace = 'Georgia, "Times New Roman", serif';
   caption.fontWeight = 'italic';
   caption.material.transparent = true;
