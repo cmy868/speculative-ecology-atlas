@@ -2,10 +2,10 @@ import { chromium } from 'playwright-core';
 import path from 'node:path';
 const outDir = path.resolve('_design_review');
 const shots = [
-  { name: 'r8_index.png', url: 'http://localhost:4323/atlas.html', wait: 9000 },
+  { name: 'r9_index.png', url: 'http://localhost:4324/atlas.html', wait: 9000 },
   {
-    name: 'r8_shanshui.png',
-    url: 'http://localhost:4323/atlas.html?node=chinese-landscape-aesthetics',
+    name: 'r9_bg.png',
+    url: 'http://localhost:4324/atlas.html?node=six-seasons',
     wait: 11000,
   },
 ];

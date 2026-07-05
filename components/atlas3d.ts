@@ -659,7 +659,7 @@ const NEBULA_FRAGMENT = /* glsl */ `
 
   void main() {
     vec2 uv = (vUv - 0.5) * uAspect;
-    float t = uTime * 0.028;
+    float t = uTime * 0.022;            /* a touch slower — a calm drift */
     /* two rounds of domain warping — the ink-in-water flow */
     vec2 q = vec2(fbm(uv * 1.4 + t), fbm(uv * 1.4 - t + 5.2));
     vec2 r = vec2(
@@ -667,12 +667,18 @@ const NEBULA_FRAGMENT = /* glsl */ `
       fbm(uv * 1.4 + q * 1.5 - t * 0.5 + 2.1)
     );
     float n = fbm(uv * 1.4 + r * 1.7);
+    /* a third, slowly counter-drifting channel governs where green pools
+       gather, so the colour keeps shifting smoothly over time */
+    float g = fbm(uv * 1.1 - r * 1.2 + vec2(t * 0.5, -t * 0.4) + 8.3);
 
-    vec3 deepIndigo = vec3(0.060, 0.052, 0.120);
-    vec3 violet     = vec3(0.088, 0.048, 0.130);
-    vec3 teal       = vec3(0.030, 0.078, 0.098);
+    vec3 deepIndigo = vec3(0.052, 0.050, 0.120);  /* the blue you liked */
+    vec3 violet     = vec3(0.086, 0.046, 0.128);
+    vec3 teal       = vec3(0.028, 0.078, 0.096);
+    vec3 mossGreen  = vec3(0.030, 0.086, 0.058);  /* an ecological green */
     vec3 col = mix(deepIndigo, violet, smoothstep(0.30, 0.72, r.x));
-    col = mix(col, teal, smoothstep(0.40, 0.92, r.y) * 0.65);
+    col = mix(col, teal, smoothstep(0.40, 0.92, r.y) * 0.6);
+    /* fold green in smoothly where the third channel pools */
+    col = mix(col, mossGreen, smoothstep(0.45, 0.9, g) * 0.55);
     col *= (0.30 + 1.05 * n);           /* cloudy density */
     col *= 0.9;                          /* keep it deep space */
 
