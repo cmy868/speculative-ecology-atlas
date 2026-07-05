@@ -609,6 +609,118 @@ export function makeBackgroundGradient(): THREE.CanvasTexture {
   return tex;
 }
 
+/* —————————————————— fluid nebula backdrop ——————————————————
+   A shader-driven, slowly flowing dark nebula rendered as a full-screen
+   quad behind everything. Domain-warped fbm gives an ink-in-water drift;
+   the palette stays in very deep cosmic tones (indigo / violet / teal) so
+   the colour is visible as depth and motion without ever brightening into
+   "a blue background". */
+
+const NEBULA_VERTEX = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    /* a clip-space quad, independent of the camera — always full-screen */
+    gl_Position = vec4(position.xy, 1.0, 1.0);
+  }
+`;
+
+const NEBULA_FRAGMENT = /* glsl */ `
+  precision highp float;
+  uniform float uTime;
+  uniform vec2 uAspect;
+  varying vec2 vUv;
+
+  float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 345.45));
+    p += dot(p, p + 34.345);
+    return fract(p.x * p.y);
+  }
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  }
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < 5; i++) {
+      v += a * noise(p);
+      p *= 2.0;
+      a *= 0.5;
+    }
+    return v;
+  }
+
+  void main() {
+    vec2 uv = (vUv - 0.5) * uAspect;
+    float t = uTime * 0.028;
+    /* two rounds of domain warping — the ink-in-water flow */
+    vec2 q = vec2(fbm(uv * 1.4 + t), fbm(uv * 1.4 - t + 5.2));
+    vec2 r = vec2(
+      fbm(uv * 1.4 + q * 1.5 + t * 0.7),
+      fbm(uv * 1.4 + q * 1.5 - t * 0.5 + 2.1)
+    );
+    float n = fbm(uv * 1.4 + r * 1.7);
+
+    vec3 deepIndigo = vec3(0.060, 0.052, 0.120);
+    vec3 violet     = vec3(0.088, 0.048, 0.130);
+    vec3 teal       = vec3(0.030, 0.078, 0.098);
+    vec3 col = mix(deepIndigo, violet, smoothstep(0.30, 0.72, r.x));
+    col = mix(col, teal, smoothstep(0.40, 0.92, r.y) * 0.65);
+    col *= (0.30 + 1.05 * n);           /* cloudy density */
+    col *= 0.9;                          /* keep it deep space */
+
+    /* fade the corners toward near-black so the field feels boundless */
+    float vig = smoothstep(1.25, 0.15, length((vUv - 0.5) * uAspect));
+    col *= mix(0.22, 1.0, vig);
+
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+
+export interface NebulaBackdrop {
+  mesh: THREE.Mesh;
+  material: THREE.ShaderMaterial;
+  update: (t: number, aspect: number) => void;
+  dispose: () => void;
+}
+
+export function makeNebulaBackdrop(): NebulaBackdrop {
+  const geom = new THREE.PlaneGeometry(2, 2);
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uAspect: { value: new THREE.Vector2(1.6, 1) },
+    },
+    vertexShader: NEBULA_VERTEX,
+    fragmentShader: NEBULA_FRAGMENT,
+    depthTest: false,
+    depthWrite: false,
+    fog: false,
+  });
+  const mesh = new THREE.Mesh(geom, material);
+  mesh.frustumCulled = false;
+  mesh.renderOrder = -100; // paints first, behind the whole galaxy
+  return {
+    mesh,
+    material,
+    update: (t: number, aspect: number) => {
+      material.uniforms.uTime.value = t;
+      material.uniforms.uAspect.value.set(Math.max(aspect, 1), 1);
+    },
+    dispose: () => {
+      geom.dispose();
+      material.dispose();
+    },
+  };
+}
+
 /* ————————————————————— starfield ————————————————————— */
 
 const STAR_VERTEX = /* glsl */ `

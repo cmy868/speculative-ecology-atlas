@@ -20,7 +20,7 @@ import {
   NEBULA_LINK_COLORS,
   NEBULA_PARTICLE_COLORS,
   hashString,
-  makeBackgroundGradient,
+  makeNebulaBackdrop,
   makeEnvMap,
   makeFieldMembrane,
   makeGlowTexture,
@@ -30,6 +30,7 @@ import {
   setupLights,
   type AtlasLights,
   type FieldMembrane,
+  type NebulaBackdrop,
   type NodeArtHandle,
   type Starfield,
 } from './atlas3d';
@@ -140,7 +141,7 @@ export default function AtlasMap3D() {
   const membraneRef = useRef<FieldMembrane | null>(null);
   const lightsRef = useRef<AtlasLights | null>(null);
   const envMapRef = useRef<THREE.Texture | null>(null);
-  const bgTexRef = useRef<THREE.Texture | null>(null);
+  const nebulaRef = useRef<NebulaBackdrop | null>(null);
   const selectionRingRef = useRef<THREE.Line | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
   const flyingUntilRef = useRef<number>(0);
@@ -275,17 +276,17 @@ export default function AtlasMap3D() {
       );
 
       const scene = fg.scene();
-      /* a super-smooth blend of very dark universe tones instead of flat
-         black — a faint deep-indigo pool and a fainter plum one, fading to
-         near-pure-black at the edges: depth without ever reading as "a blue
-         background". The moving stars, membrane, and camera float bring it
-         to life. */
-      bgTexRef.current = makeBackgroundGradient();
-      scene.background = bgTexRef.current;
-      /* fog matches the gradient's deep tone (not pure black) so far stars
-         recede into the field rather than a hard black wall — and a touch
-         thinner so more of the dust stays visible */
-      scene.fog = new THREE.FogExp2(new THREE.Color('#05060c').getHex(), 0.0003);
+      /* a shader-driven fluid nebula behind the whole galaxy — slowly
+         flowing deep cosmic colour (indigo / violet / teal), so the field
+         reads as living dark space rather than flat black. It renders first
+         (renderOrder -100) as a full-screen quad. */
+      scene.background = null;
+      const nebula = makeNebulaBackdrop();
+      nebulaRef.current = nebula;
+      scene.add(nebula.mesh);
+      /* fog in a deep cosmic tone (not pure black) so far stars recede into
+         the field, a touch thinner so more of the dust stays visible */
+      scene.fog = new THREE.FogExp2(new THREE.Color('#06060e').getHex(), 0.0003);
 
       /* real lighting: warm point light at the nucleus + shaped fills,
          and a small PMREM environment for glass/metal reflections */
@@ -325,9 +326,9 @@ export default function AtlasMap3D() {
          hue instead of blowing out to white */
       const bloom = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
-        0.7, // strength
-        0.55, // radius
-        0.72, // threshold — labels (#ded7c4, linear ≈ 0.68) stay below
+        0.9, // strength — a fuller halo so the thin lit threads glow
+        0.82, // radius — a wider, softer blur on the bloomed edges
+        0.7, // threshold — labels (#ded7c4, linear ≈ 0.68) stay just below
       );
       const composer = fg.postProcessingComposer();
       composer.addPass(bloom);
@@ -368,6 +369,10 @@ export default function AtlasMap3D() {
           starfield.points.rotation.y += dt * 0.009;
           starfield.points.rotation.x += dt * 0.003;
           membraneRef.current?.update(t, dt);
+          nebulaRef.current?.update(
+            t,
+            window.innerWidth / Math.max(window.innerHeight, 1),
+          );
         }
 
         /* ease every node toward its focus targets — the hover-dim breathes
@@ -503,7 +508,7 @@ export default function AtlasMap3D() {
       starfieldRef.current?.dispose();
       membraneRef.current?.dispose();
       envMapRef.current?.dispose();
-      bgTexRef.current?.dispose();
+      nebulaRef.current?.dispose();
       glowTexRef.current?.dispose();
       handlesRef.current.clear();
     },
@@ -665,8 +670,10 @@ export default function AtlasMap3D() {
     [isLinkLit, activeId],
   );
 
+  /* thinner cores, but bloom does the visual weight — a lit thread reads as
+     a glowing thick line with a soft, blurred edge rather than a hard tube */
   const linkWidth = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? 0.66 : 0.32),
+    (link: LinkObject) => (isLinkLit(link) ? 0.42 : 0.32),
     [isLinkLit],
   );
 
@@ -688,7 +695,7 @@ export default function AtlasMap3D() {
   );
 
   const linkParticleWidth = useCallback(
-    (link: LinkObject) => (isLinkLit(link) ? 1.95 : 1.0),
+    (link: LinkObject) => (isLinkLit(link) ? 1.7 : 1.0),
     [isLinkLit],
   );
 
