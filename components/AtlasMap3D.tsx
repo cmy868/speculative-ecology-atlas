@@ -20,6 +20,7 @@ import {
   NEBULA_LINK_COLORS,
   NEBULA_PARTICLE_COLORS,
   hashString,
+  makeBackgroundGradient,
   makeEnvMap,
   makeFieldMembrane,
   makeGlowTexture,
@@ -139,6 +140,7 @@ export default function AtlasMap3D() {
   const membraneRef = useRef<FieldMembrane | null>(null);
   const lightsRef = useRef<AtlasLights | null>(null);
   const envMapRef = useRef<THREE.Texture | null>(null);
+  const bgTexRef = useRef<THREE.Texture | null>(null);
   const selectionRingRef = useRef<THREE.Line | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
   const flyingUntilRef = useRef<number>(0);
@@ -273,10 +275,17 @@ export default function AtlasMap3D() {
       );
 
       const scene = fg.scene();
-      scene.fog = new THREE.FogExp2(
-        new THREE.Color(ATLAS3D.bg).getHex(),
-        0.0004,
-      );
+      /* a super-smooth blend of very dark universe tones instead of flat
+         black — a faint deep-indigo pool and a fainter plum one, fading to
+         near-pure-black at the edges: depth without ever reading as "a blue
+         background". The moving stars, membrane, and camera float bring it
+         to life. */
+      bgTexRef.current = makeBackgroundGradient();
+      scene.background = bgTexRef.current;
+      /* fog matches the gradient's deep tone (not pure black) so far stars
+         recede into the field rather than a hard black wall — and a touch
+         thinner so more of the dust stays visible */
+      scene.fog = new THREE.FogExp2(new THREE.Color('#05060c').getHex(), 0.0003);
 
       /* real lighting: warm point light at the nucleus + shaped fills,
          and a small PMREM environment for glass/metal reflections */
@@ -299,7 +308,7 @@ export default function AtlasMap3D() {
       scene.environment = envMapRef.current;
 
       /* GPU particle field — fewer stars on small screens */
-      const starCount = window.innerWidth < 720 ? 1300 : 3200;
+      const starCount = window.innerWidth < 720 ? 1900 : 4400;
       const starfield = makeStarfield(starCount);
       starfieldRef.current = starfield;
       scene.add(starfield.points);
@@ -354,7 +363,10 @@ export default function AtlasMap3D() {
 
         if (!reduced) {
           starfield.material.uniforms.uTime.value = t;
-          starfield.points.rotation.y += dt * 0.004; // imperceptibly slow drift
+          /* a gentle, visible flow of the dust field — slow enough to stay
+             calm, quick enough to feel alive */
+          starfield.points.rotation.y += dt * 0.009;
+          starfield.points.rotation.x += dt * 0.003;
           membraneRef.current?.update(t, dt);
         }
 
@@ -491,6 +503,7 @@ export default function AtlasMap3D() {
       starfieldRef.current?.dispose();
       membraneRef.current?.dispose();
       envMapRef.current?.dispose();
+      bgTexRef.current?.dispose();
       glowTexRef.current?.dispose();
       handlesRef.current.clear();
     },

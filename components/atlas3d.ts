@@ -447,13 +447,13 @@ const MEMBRANE_FRAGMENT = /* glsl */ `
        one side of the vast shell is gently luminous and the form falls
        into shadow across its own curve — a lit volume, not a vignette */
     float lam = max(dot(n, normalize(uLightDir)), 0.0);
-    float shade = 0.26 + 1.2 * pow(lam, 1.25);
-    float f = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.5);
+    float shade = 0.30 + 1.5 * pow(lam, 1.2);
+    float f = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.4);
     /* the rim runs hotter on the lit side, so the shaded boundary glows —
        the lit sweep of the shell crosses the bloom threshold and blooms
        softly while the shadow side stays quiet */
-    vec3 col = mix(uColorA, uColorB, f) * shade + uColorB * f * lam * 0.95;
-    gl_FragColor = vec4(col, f * uOpacity * (0.45 + 1.0 * lam));
+    vec3 col = mix(uColorA, uColorB, f) * shade + uColorB * f * lam * 1.45;
+    gl_FragColor = vec4(col, f * uOpacity * (0.5 + 1.2 * lam));
   }
 `;
 
@@ -497,7 +497,7 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
       uColorB: { value: new THREE.Color('#e6d3a8') },
       /* fixed warm key light, in family with the nucleus/env warm glow */
       uLightDir: { value: new THREE.Vector3(0.5, 0.62, 0.35).normalize() },
-      uOpacity: { value: 0.042 },
+      uOpacity: { value: 0.055 },
     },
     vertexShader: MEMBRANE_VERTEX,
     fragmentShader: MEMBRANE_FRAGMENT,
@@ -555,6 +555,60 @@ export function makeFieldMembrane(radius = 520): FieldMembrane {
   };
 }
 
+/* —————————————————— background gradient ——————————————————
+   A super-smooth blend of very dark universe tones for scene.background:
+   a faint deep-indigo pool and a fainter plum one over near-black, with a
+   corner vignette to pure black. Kept extremely dark so it reads as cosmic
+   depth, never as "a blue background". */
+export function makeBackgroundGradient(): THREE.CanvasTexture {
+  const size = 256;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#010104';
+  ctx.fillRect(0, 0, size, size);
+
+  const pool = (
+    x: number,
+    y: number,
+    r: number,
+    inner: string,
+    mid?: string,
+  ) => {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, inner);
+    if (mid) g.addColorStop(0.5, mid);
+    g.addColorStop(1, 'rgba(2,2,6,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  };
+  /* deep-indigo pool, up-and-left of centre */
+  pool(size * 0.42, size * 0.4, size * 0.78, 'rgba(18,16,34,1)', 'rgba(8,7,18,1)');
+  /* fainter plum pool, lower-right */
+  pool(size * 0.7, size * 0.72, size * 0.62, 'rgba(24,13,22,0.82)');
+  /* vignette the corners back down to pure black */
+  const v = ctx.createRadialGradient(
+    size * 0.5,
+    size * 0.5,
+    size * 0.3,
+    size * 0.5,
+    size * 0.5,
+    size * 0.74,
+  );
+  v.addColorStop(0, 'rgba(0,0,0,0)');
+  v.addColorStop(1, 'rgba(0,0,2,0.82)');
+  ctx.fillStyle = v;
+  ctx.fillRect(0, 0, size, size);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 /* ————————————————————— starfield ————————————————————— */
 
 const STAR_VERTEX = /* glsl */ `
@@ -582,7 +636,7 @@ const STAR_FRAGMENT = /* glsl */ `
     float d = length(gl_PointCoord - vec2(0.5));
     float falloff = smoothstep(0.5, 0.0, d);
     falloff *= falloff;
-    gl_FragColor = vec4(vColor, falloff * vTwinkle * 0.9);
+    gl_FragColor = vec4(vColor, falloff * vTwinkle * 1.2);
   }
 `;
 
@@ -624,13 +678,13 @@ export function makeStarfield(count: number): Starfield {
     const roll = Math.random();
     tmp.copy(roll < 0.62 ? ivory : roll < 0.86 ? gold : roll < 0.95 ? violet : cyan);
     /* a handful of "hero" stars give the field depth hierarchy */
-    const hero = Math.random() < 0.05;
-    const intensity = hero ? 0.85 + Math.random() * 0.15 : 0.35 + Math.random() * 0.65;
+    const hero = Math.random() < 0.06;
+    const intensity = hero ? 0.9 + Math.random() * 0.1 : 0.52 + Math.random() * 0.62;
     colors[i * 3] = tmp.r * intensity;
     colors[i * 3 + 1] = tmp.g * intensity;
     colors[i * 3 + 2] = tmp.b * intensity;
 
-    sizes[i] = (0.9 + Math.random() * 2.1) * (hero ? 1.8 : 1);
+    sizes[i] = (1.15 + Math.random() * 2.4) * (hero ? 1.9 : 1);
     phases[i] = Math.random() * Math.PI * 2;
     speeds[i] = 0.35 + Math.random() * 0.9;
   }
