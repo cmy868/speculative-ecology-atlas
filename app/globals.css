@@ -123,36 +123,35 @@ code {
     0 14px 44px rgba(0, 0, 0, 0.55);
 }
 
-/* a faint moving specular sheen sweeping the glass, so the surface reads as
-   liquid even where there is nothing bright behind it to refract. A single
-   wide, soft band (no-repeat, so no tiling seam / hard edge) drifting very
-   slowly — a gentle breath of light, never a fast streak. */
+/* a faint specular sheen so the surface reads as liquid even where there is
+   nothing bright behind it to refract. A soft RADIAL glow (not a linear band)
+   drifting slowly corner-to-corner: because it falls off smoothly in every
+   direction it never shows a straight cut edge, and it stays contained in the
+   element (no seam, no overflow). */
 .glass::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background-image: linear-gradient(
-    122deg,
-    transparent 20%,
-    rgba(255, 252, 245, 0.03) 40%,
-    rgba(255, 252, 245, 0.06) 50%,
-    rgba(255, 252, 245, 0.03) 60%,
-    transparent 80%
+  background-image: radial-gradient(
+    58% 46% at 50% 50%,
+    rgba(255, 252, 245, 0.07),
+    rgba(255, 252, 245, 0.025) 42%,
+    transparent 72%
   );
   background-repeat: no-repeat;
-  background-size: 230% 230%;
-  animation: glass-sheen 24s ease-in-out infinite;
+  background-size: 190% 190%;
+  animation: glass-sheen 26s ease-in-out infinite;
 }
 
 @keyframes glass-sheen {
   0%,
   100% {
-    background-position: 145% -20%;
+    background-position: 12% 6%;
   }
   50% {
-    background-position: -45% 120%;
+    background-position: 88% 94%;
   }
 }
 
