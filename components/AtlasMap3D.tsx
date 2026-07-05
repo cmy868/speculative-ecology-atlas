@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 import type {
   ForceGraphMethods,
   LinkObject,
@@ -319,7 +320,19 @@ export default function AtlasMap3D() {
         0.55, // radius
         0.72, // threshold — labels (#ded7c4, linear ≈ 0.68) stay below
       );
-      fg.postProcessingComposer().addPass(bloom);
+      const composer = fg.postProcessingComposer();
+      composer.addPass(bloom);
+
+      /* The bloom EffectComposer renders the scene to offscreen targets,
+         which bypasses the renderer's default MSAA — so thin lines (links,
+         the drawn rings) alias badly, worst of all when zoomed out. Cap the
+         device pixel ratio a touch higher for crispness, then append an SMAA
+         pass so every edge in the composited image is smoothed. */
+      const pr = Math.min(window.devicePixelRatio || 1, 2);
+      renderer.setPixelRatio(pr);
+      composer.setPixelRatio(pr);
+      const smaa = new SMAAPass();
+      composer.addPass(smaa);
 
       /* per-frame driver, hooked onto the (never-culled) starfield:
          twinkle time, slow star drift, ring rotation, nucleus breathing,
