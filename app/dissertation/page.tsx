@@ -26,10 +26,6 @@ const chapters = [
   { label: 'Conclusion', title: 'Toward an Evolving Ecology of Human-AI Co-Creation' },
 ];
 
-// Plain <a href> doesn't get Next's basePath rewrite, so prefix manually
-// when the site is served under a sub-path (e.g. GitHub Pages).
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
-
 const committee = [
   { role: 'Co-Chair', name: 'Dr. Memo Akten' },
   { role: 'Co-Chair', name: 'Dr. Pinar Yoldas' },
@@ -111,13 +107,11 @@ export default function DissertationPage() {
         </section>
 
         <section className="dissertation-section">
-          <h2>Download</h2>
-          <a className="button button-primary" href={`${BASE_PATH}/dissertation.pdf`}>
-            Download Dissertation PDF
-          </a>
+          <h2>Full Dissertation</h2>
           <p className="section-note">
-            Final draft — University of California San Diego, 2026.
+            The full dissertation will be available here once it is published.
           </p>
+          <p className="section-note">University of California San Diego, 2026.</p>
         </section>
 
         <section className="dissertation-section">
